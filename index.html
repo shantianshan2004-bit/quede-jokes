@@ -2400,6 +2400,8 @@ async function runPipeline(files) {
       title: a.title, tags: a.tags, speakers: a.speakers, mood: a.mood,
       isGroup: a.isGroup, text: a.text
     };
+    /* 查重：感知哈希汉明距离 ≤3 视为几乎相同（云端改造时误删了定义，2026-10-13 线上抓到） */
+    const dup = S.items.find(x => x.hash && img.hash && Img.hamming(x.hash, img.hash) <= 3);
     try {
       const saved = await Repo.createItem(rec, img.dataUrl);
       S.items.unshift(saved);
