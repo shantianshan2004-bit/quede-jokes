@@ -247,11 +247,11 @@ html[data-theme="dark"] .chip[aria-pressed="true"]{ color:#131316; background:#F
 /* ============================================================
    主体
    ============================================================ */
-main{ position:relative; z-index:10; padding:128px var(--s5) 140px; max-width:1180px; margin:0 auto; }
+main{ position:relative; z-index:10; padding:var(--topbar-h,128px) var(--s5) 140px; max-width:1180px; margin:0 auto; }
 .wall{ columns:4; column-gap:18px; }
 @media (max-width:1180px){ .wall{ columns:3; } main{ padding-left:var(--s4); padding-right:var(--s4); } }
 @media (max-width:860px){ .wall{ columns:2; } }
-@media (max-width:520px){ .wall{ columns:2; column-gap:12px; } main{ padding:118px var(--s3) 130px; } }
+@media (max-width:520px){ .wall{ columns:2; column-gap:12px; } main{ padding:var(--topbar-h,118px) var(--s3) 130px; } }
 
 /* ---------- 内容层卡片：安静、不透明。玻璃只出现在交互时 ---------- */
 .card{
@@ -499,9 +499,16 @@ html[data-theme="dark"] .bub .txt{ background:rgba(255,255,255,.09); }
 .bub.me .txt{ background:var(--warm); color:#fff; border-radius:14px 14px 5px 14px; }
 .bub.enter{ animation:bubIn 520ms var(--e-spring) both; animation-delay:var(--d,0ms); }
 @keyframes bubIn{ from{ opacity:0; transform:translateY(14px) scale(.9); } to{ opacity:1; transform:none; } }
-.bub .del{ border:0; background:none; padding:0; cursor:pointer; font-size:11px; color:var(--ink-3);
-  opacity:0; transition:opacity var(--d-fast) linear; margin:0 3px; }
-.bub:hover .del{ opacity:1; }
+/* 删除评论：常态可见 —— 之前只在 hover 时显示，手机上永远看不到 */
+.bub .del{
+  border:0; cursor:pointer; font-size:11px; line-height:1; color:var(--ink-3);
+  background:rgba(28,28,30,.055); border-radius:999px; padding:7px 13px; margin:3px 3px 0;
+  min-height:32px; display:inline-flex; align-items:center;
+  opacity:.85; transition:opacity var(--d-fast) linear, background var(--d-fast) linear, color var(--d-fast) linear;
+}
+html[data-theme="dark"] .bub .del{ background:rgba(255,255,255,.09); }
+.bub .del:hover, .bub .del:focus-visible{ opacity:1; color:var(--warm); background:var(--warm-soft); }
+.bub .del:disabled{ opacity:.4; cursor:default; }
 .emptyline{ font-size:13px; color:var(--ink-3); padding:6px 2px 2px; }
 
 .composer{ display:flex; gap:9px; align-items:flex-end; margin-top:10px; }
@@ -547,6 +554,55 @@ html[data-theme="dark"] .seg button[aria-pressed="true"]{ background:rgba(255,25
 input[type=range]{ width:100%; accent-color:var(--cool); }
 .twk .val{ font-family:var(--font-mono); font-size:11.5px; color:var(--ink-3); float:right; }
 
+/* ---------- 设置里的开关行（文字识别） ---------- */
+.swrow{ display:flex; align-items:flex-start; gap:12px; margin-bottom:14px; }
+.swrow .swtxt{ flex:1 1 auto; min-width:0; }
+.swrow label{ display:block; font-size:13px; color:var(--ink); margin-bottom:5px; line-height:1.4; cursor:pointer; }
+.swsub{ font-size:11.5px; color:var(--ink-3); line-height:1.55; margin:0; }
+.switch{ flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; border:0; background:none;
+  padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.switch .track{ position:relative; display:block; width:48px; height:28px; border-radius:999px;
+  background:rgba(28,28,30,.20); transition:background var(--d-base) var(--e-expo); }
+html[data-theme="dark"] .switch .track{ background:rgba(255,255,255,.22); }
+.switch .knob{ position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:999px; background:#fff;
+  box-shadow:0 2px 6px -1px rgba(28,28,30,.45);
+  transition:transform var(--d-slow) var(--e-spring); }
+.switch .swstate{ font-size:12px; color:var(--ink-2); min-width:24px; text-align:left; }
+.switch[aria-checked="true"] .track{ background:var(--cool); }
+.switch[aria-checked="true"] .knob{ transform:translateX(20px); }
+.switch[aria-checked="true"] .swstate{ color:var(--cool-ink); font-weight:500; }
+.switch:active .knob{ transform:scale(.92); }
+.switch[aria-checked="true"]:active .knob{ transform:translateX(20px) scale(.92); }
+.switch:focus-visible .track{ box-shadow:0 0 0 4px var(--cool-soft); }
+.twsep{ height:1px; background:var(--line-1); margin:2px 0 15px; }
+
+/* ---------- 大图查看 ---------- */
+#lightbox{
+  position:fixed; inset:0; z-index:150; display:grid; place-items:center; padding:14px;
+  background:rgba(10,10,10,.93); opacity:0; pointer-events:none;
+  transition:opacity var(--d-base) var(--e-expo);
+  -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+}
+#lightbox.on{ opacity:1; pointer-events:auto; }
+#lightbox img{
+  max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain;
+  border-radius:10px; box-shadow:0 40px 90px -30px rgba(0,0,0,.8);
+  transform:scale(.94); transition:transform var(--d-slow) var(--e-spring);
+}
+#lightbox.on img{ transform:none; }
+.lb-hint{
+  position:absolute; left:50%; bottom:max(18px, env(safe-area-inset-bottom));
+  transform:translateX(-50%); font-size:12px; color:rgba(255,255,255,.62); white-space:nowrap;
+}
+.lb-close{
+  position:absolute; right:max(14px, env(safe-area-inset-right)); top:max(14px, env(safe-area-inset-top));
+  width:40px; height:40px; border-radius:999px; border:0; cursor:pointer; display:grid; place-items:center;
+  background:rgba(255,255,255,.14); color:#fff;
+}
+.lb-close:hover{ background:rgba(255,255,255,.24); }
+.hero img{ cursor:zoom-in; }
+@media (max-width:700px){ .lb-hint{ bottom:max(26px, env(safe-area-inset-bottom)); font-size:11.5px; } }
+
 /* ---------- 飘心 ---------- */
 .burst{ position:fixed; z-index:120; pointer-events:none; font-size:20px; }
 @keyframes burstUp{
@@ -589,6 +645,9 @@ html[data-theme="dark"] #toast{ background:rgba(240,238,234,.95); color:#131316;
   background-size:cover; background-position:center;
   user-select:none; -webkit-user-select:none;
 }
+/* 图片头像：签名地址到手前先显示首字母渐变，图到位后盖上去（绝不出现「?」灰块） */
+.av .av-ini{ font-size:1em; }
+.av.has-img .av-ini{ visibility:hidden; }
 
 /* ---------- 进门（本地原型的「登录」） ---------- */
 #gate{
@@ -823,7 +882,7 @@ body.locked{ overflow:hidden; }
   .chip{ height:38px; padding:0 13px; }
 
   /* 单列：这是这次适配里最重要的一个决定 */
-  main{ padding:112px 14px calc(110px + env(safe-area-inset-bottom)); }
+  main{ padding:var(--topbar-h,112px) 14px calc(110px + env(safe-area-inset-bottom)); }
   .wall{ columns:1; column-gap:0; }
   .card{ margin-bottom:14px; border-radius:var(--r-md); }
   .card:hover{ transform:none; }
@@ -1000,7 +1059,6 @@ body.locked{ overflow:hidden; }
     <p id="emptyP">把那张让你笑出声的聊天截图丢进来。识别、分类、打标签、归位，四步全自动，署上你的名字。</p>
     <div class="row" id="emptyRow">
       <button class="btn" id="emptyUpload">上传截图</button>
-      <button class="btn ghost" id="emptySample">生成示例截图</button>
     </div>
   </div>
 </main>
@@ -1011,18 +1069,22 @@ body.locked{ overflow:hidden; }
     上传截图
   </button>
   <span class="sep"></span>
-  <button class="dock-btn" id="dockSample">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 1.8l1.1 2.6L7.7 5.5 5.1 6.6 4 9.2 2.9 6.6.3 5.5l2.6-1.1L4 1.8z" fill="var(--cool)"/><path d="M11.6 7.4l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1z" fill="var(--warm)"/></svg>
-    示例
-  </button>
-  <span class="sep"></span>
-  <button class="dock-btn" id="dockTweaks" aria-label="调整参数">
+  <button class="dock-btn" id="dockTweaks" aria-label="设置">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 5h12M2 11h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="6" cy="5" r="2.1" fill="var(--surface)" stroke="currentColor" stroke-width="1.6"/><circle cx="10.5" cy="11" r="2.1" fill="var(--surface)" stroke="currentColor" stroke-width="1.6"/></svg>
-    Tweaks
+    设置
   </button>
 </div>
 
 <div class="scrim" id="scrim"></div>
+
+<!-- 大图查看：点开帖子里的截图后全屏看原图 -->
+<div id="lightbox" aria-hidden="true" role="dialog" aria-label="查看大图">
+  <img id="lbImg" alt="">
+  <span class="lb-hint">轻点任意处关闭</span>
+  <button class="lb-close" id="lbClose" aria-label="关闭">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+  </button>
+</div>
 
 <section id="pipeline" class="glass" data-thickness="thick" aria-live="polite" aria-label="自动归档进度">
   <h3>正在归档</h3>
@@ -1067,11 +1129,25 @@ body.locked{ overflow:hidden; }
 </section>
 
 <div id="tweaks" class="glass" data-thickness="thick">
-  <h3>参数调整
+  <h3>设置
     <button class="iconbtn x" id="twClose" aria-label="关闭" style="width:26px;height:26px">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
   </h3>
+
+  <!-- 文字识别：用标准开关 + 明确当前状态，不再是个看不清的分段按钮 -->
+  <div class="swrow">
+    <div class="swtxt">
+      <label id="ocrLabel" for="ocrSwitch">上传时自动识别截图里的文字</label>
+      <p class="swsub" id="ocrStatus">当前：已关闭 · 上传后可在详情页手动补录</p>
+    </div>
+    <button class="switch" id="ocrSwitch" type="button" role="switch" aria-checked="false" aria-labelledby="ocrLabel">
+      <span class="track"><span class="knob"></span></span>
+      <span class="swstate" id="ocrState">关闭</span>
+    </button>
+  </div>
+  <div class="twsep"></div>
+
   <div class="twk"><label>玻璃厚度</label>
     <div class="seg" data-tw="thickness">
       <button data-v="thin">薄</button><button data-v="regular">标准</button><button data-v="thick">厚</button>
@@ -1087,14 +1163,8 @@ body.locked{ overflow:hidden; }
       <button data-v="light">浅色</button><button data-v="dark">深色</button>
     </div>
   </div>
-  <div class="twk"><label>内容色彩外溢 <span class="val" id="ambVal">55%</span></label>
+  <div class="twk" style="margin-bottom:4px"><label>内容色彩外溢 <span class="val" id="ambVal">55%</span></label>
     <input type="range" id="ambRange" min="0" max="100" value="55">
-  </div>
-  <div class="twk" style="margin-bottom:4px"><label>文字识别（OCR）</label>
-    <div class="seg" data-tw="ocr">
-      <button data-v="off">关闭</button><button data-v="on">开启 · 首次约 15MB</button>
-    </div>
-    <p id="ocrStatus" style="font-size:11.5px;color:var(--ink-3);margin:8px 0 0;line-height:1.5">关闭时，可在详情里手动补录文字，归类引擎照常工作。</p>
   </div>
 </div>
 
@@ -1405,8 +1475,8 @@ const Repo = (() => {
 
 /* 重新读一次自己的资料并落到内存。头像若是图片要先把地址签出来，否则显示不出来 */
 async function refreshMyProfile() {
-  if (!User.session) return null;
-  const myId = User.session.user.id;
+  const myId = User.session && User.session.user && User.session.user.id;
+  if (!myId) return null;
   const r = await cloud.database.from("profiles").select("*").eq("owner_id", myId).maybeSingle();
   if (r.error) throw r.error;
   if (!r.data) { User.setProfile(null); return null; }
@@ -1483,18 +1553,44 @@ function hueOf(s) {
   for (const ch of String(s)) h = (h * 131 + ch.codePointAt(0)) % 360;
   return h;
 }
-function avHTML(av, size, extra) {
+function avHTML(av, size, extra, fallbackName) {
   const a = (typeof av === "string") ? { type: "emoji", value: av } : (av || {});
   const st = `width:${size}px;height:${size}px;`;
-  if (a.type === "img" && a.value)
-    return `<span class="av ${extra || ""}" style="${st}background-image:url('${a.value}')"></span>`;
+  /* 图片头像的地址是异步签发的：签好了直接铺图；还没签好就先铺「首字母渐变」，
+     签名回来后由 Avatars.hydrate 盖上真图 —— 再也不会出现「?」灰块。 */
+  if (a.type === "img" && (a.path || a.value)) {
+    const ini = fallbackName ? String(fallbackName).trim().slice(0, 1) : "";
+    const h = hueOf(a.path || ini || "img");
+    const grad = `linear-gradient(140deg,hsl(${h} 64% 58%),hsl(${(h + 42) % 360} 56% 42%))`;
+    const bg = a.value ? `url('${a.value}'), ${grad}` : grad;
+    return `<span class="av ${extra || ""}${a.value ? " has-img" : ""}" style="${st}background-image:${bg}" data-avpath="${esc(a.path || "")}"><i class="av-ini" style="font-size:${Math.round(size * .42)}px;font-style:normal">${esc(ini)}</i></span>`;
+  }
   const ch = a.value ? String(a.value).slice(0, 2) : "";
   if (!ch)
     return `<span class="av ${extra || ""}" style="${st}background:rgba(28,28,30,.13);color:var(--ink-2);font-size:${Math.round(size * .42)}px">?</span>`;
   const h = hueOf(ch);
   return `<span class="av ${extra || ""}" style="${st}background:linear-gradient(140deg,hsl(${h} 64% 58%),hsl(${(h + 42) % 360} 56% 42%));font-size:${Math.round(size * .46)}px">${esc(ch)}</span>`;
 }
-const meHTML = (size, extra) => avHTML(User.me ? User.me.av : null, size, extra);
+const meHTML = (size, extra) => avHTML(User.me ? User.me.av : null, size, extra, User.me ? User.me.nick : "");
+
+/* 图片头像的签名地址是异步来的：渲染完统一补签一次再盖上 */
+const Avatars = (() => {
+  async function hydrate(root) {
+    const els = $$("[data-avpath]", root || document).filter(e => !e.classList.contains("has-img"));
+    if (!els.length) return;
+    try { await Urls.sign(els.map(e => e.dataset.avpath)); } catch (e) { logErr("avatars", e); }
+    els.forEach(e => {
+      const u = Urls.get(e.dataset.avpath);
+      if (!u) return;
+      const cur = e.style.backgroundImage || "";
+      e.style.backgroundImage = `url('${u}')` + (cur.indexOf("linear-gradient") >= 0 ? ", " + cur : "");
+      e.classList.add("has-img");
+    });
+  }
+  let t = null;
+  function soon(root) { clearTimeout(t); t = setTimeout(() => { hydrate(root).catch(() => {}); }, 40); }
+  return { hydrate, soon };
+})();
 
 /* 头像选择器：emoji 预设 + 上传自己的图 */
 function avPickerHTML(cur) {
@@ -1550,7 +1646,8 @@ async function fileToAvatar(file) {
 /* 导航右上角的「我」 */
 function applyMe() {
   const m = User.me;
-  $("#navMe").innerHTML = avHTML(m ? m.av : null, 30);
+  $("#navMe").innerHTML = avHTML(m ? m.av : null, 30, "", m ? m.nick : "");
+  Avatars.soon();
   $("#navMe").title = m ? m.nick + " · 个人主页" : "还没登录，点这里登录";
 }
 
@@ -1703,144 +1800,14 @@ const Archive = (() => {
   return { analyze, CATS };
 })();
 
-/* ============================================================================
-   4. 示例截图生成器
-   用 canvas 真实画出来（离线可用），文字同时喂给归档引擎 —— 全流程是真的
-   ========================================================================== */
-const Sample = (() => {
-  const SCRIPTS = [
-    { me:"我", bg:"#EDEDED", people:[
-      ["老王", "#4A7FB5", "今天开会老板说我们要拥抱变化"],
-      ["小李", "#B5537E", "然后呢"],
-      ["老王", "#4A7FB5", "然后我们就变了三个人"],
-      ["小李", "#B5537E", "哈哈哈哈这也太离谱了"]
-    ]},
-    { me:"我", bg:"#F5F5F5", people:[
-      ["阿May", "#17857A", "我昨天梦到我在考试"],
-      ["阿May", "#17857A", "结果卷子上全是英文我一个都不认识"],
-      ["杰哥",  "#B07A1E", "那你编也得编啊"],
-      ["阿May", "#17857A", "我编了我写了一句 I am fine thank you"]
-    ]},
-    { me:"我", bg:"#EAE6E1", people:[
-      ["妈", "#D9563A", "你什么时候回来吃饭"],
-      ["我", "#4A7FB5", "马上"],
-      ["妈", "#D9563A", "你的马上是三个小时吗"],
-      ["我", "#4A7FB5", "……"]
-    ]},
-    { me:"我", bg:"#E9EDF2", people:[
-      ["K哥",  "#5E8C3A", "这局打野去哪了 他在野区种菜吗"],
-      ["阿豪", "#B07A1E", "他说他在发育"],
-      ["K哥",  "#5E8C3A", "发育到 0-8 是吧 段位怕不是买来的"]
-    ]},
-    { me:"我", bg:"#F1EFEA", people:[
-      ["同事", "#4A7FB5", "这个需求今天能上线吗"],
-      ["我",   "#D9563A", "可以"],
-      ["同事", "#4A7FB5", "你都没看需求"],
-      ["我",   "#D9563A", "我说的是可以拒绝"]
-    ]}
-  ];
-
-  function wrap(g, text, maxW) {
-    const out = []; let line = "";
-    for (const ch of text) {
-      if (g.measureText(line + ch).width > maxW && line) { out.push(line); line = ch; }
-      else line += ch;
-    }
-    if (line) out.push(line);
-    return out;
-  }
-
-  function draw(script, tall) {
-    const W = tall ? 430 : 620, PAD = 28, FS = 25, LH = 36, AVA = 44, GAP = 20, HEAD = 62, TOP = 96;
-    const bodyFont = `400 ${FS}px "PingFang SC","Microsoft YaHei",sans-serif`;
-    const nameFont = '400 17px "PingFang SC","Microsoft YaHei",sans-serif';
-    const cv = document.createElement("canvas");
-    const g0 = cv.getContext("2d");
-    const maxW = W - PAD * 2 - AVA - 18 - 34;
-    const bwMax = maxW + 34;
-
-    /* 先量准：每一块都用正文字号测宽，否则字会溢出气泡 */
-    const blocks = script.people.map(p => {
-      g0.font = bodyFont;
-      const lines = wrap(g0, p[2], maxW);
-      g0.font = bodyFont;
-      const tw = Math.max.apply(null, lines.map(l => g0.measureText(l).width));
-      const mine = p[0] === script.me;
-      return {
-        name: p[0], color: p[1], lines, mine,
-        bw: Math.min(Math.ceil(tw) + 34, bwMax),
-        h: (mine ? 16 : 30) + lines.length * LH + 10
-      };
-    });
-
-    const contentH = blocks.reduce((a, b) => a + b.h + GAP, 0);
-    const reps = tall ? 2 : 1;                    // 长截图：把对话再走一遍撑高
-    const H = Math.round(TOP + contentH * reps + 26);
-    cv.width = W; cv.height = H;
-    const g = cv.getContext("2d");
-
-    g.fillStyle = script.bg; g.fillRect(0, 0, W, H);
-    g.fillStyle = "rgba(255,255,255,.94)"; g.fillRect(0, 0, W, HEAD);
-    g.fillStyle = "#3C3C3E"; g.font = '500 22px "PingFang SC","Microsoft YaHei",sans-serif';
-    g.fillText(script.people.length + " 人群聊", PAD, 40);
-    g.fillStyle = "#8A8A90"; g.font = nameFont;
-    g.textAlign = "right"; g.fillText("20:1" + script.people.length, W - PAD, 39); g.textAlign = "left";
-    g.fillStyle = "rgba(0,0,0,.07)"; g.fillRect(0, HEAD, W, 1);
-
-    let y = TOP;
-    for (let rep = 0; rep < reps; rep++) {
-      blocks.forEach(b => {
-        if (!b.mine) {
-          g.fillStyle = b.color;
-          g.beginPath(); g.arc(PAD + AVA / 2, y + 22, AVA / 2, 0, Math.PI * 2); g.fill();
-          g.fillStyle = "#fff"; g.font = '500 20px "PingFang SC","Microsoft YaHei",sans-serif';
-          g.textAlign = "center"; g.fillText(b.name.slice(0, 1), PAD + AVA / 2, y + 30); g.textAlign = "left";
-          const bx = PAD + AVA + 18;
-          g.fillStyle = "#FFFFFF"; rr(g, bx, y, b.bw, b.h, 16); g.fill();
-          g.fillStyle = b.color; g.font = nameFont; g.fillText(b.name, bx + 17, y + 21);
-          g.fillStyle = "#1F1F22"; g.font = bodyFont;
-          b.lines.forEach((l, k) => g.fillText(l, bx + 17, y + 30 + (k + 1) * LH - 8));
-        } else {
-          const bx = W - PAD - b.bw;
-          g.fillStyle = "rgba(23,133,122,.95)"; rr(g, bx, y, b.bw, b.h, 16); g.fill();
-          g.fillStyle = "#FFFFFF"; g.font = bodyFont;
-          b.lines.forEach((l, k) => g.fillText(l, bx + 17, y + 16 + (k + 1) * LH - 8));
-        }
-        y += b.h + GAP;
-      });
-    }
-    /* 底部渐隐，暗示这是一张长截图 */
-    const grd = g.createLinearGradient(0, H - 78, 0, H);
-    grd.addColorStop(0, "rgba(0,0,0,0)"); grd.addColorStop(1, "rgba(0,0,0,.16)");
-    g.fillStyle = grd; g.fillRect(0, H - 78, W, 78);
-    return cv;
-  }
-  function rr(g, x, y, w, h, r) {
-    g.beginPath();
-    g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r);
-    g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r);
-    g.arcTo(x, y, x + w, y, r); g.closePath();
-  }
-
-  function make(i, tall) {
-    const sc = SCRIPTS[i % SCRIPTS.length];
-    const cv = draw(sc, tall);
-    return {
-      name: "示例-" + (i + 1) + ".png",
-      dataUrl: cv.toDataURL("image/jpeg", .9),
-      text: sc.people.map(p => p[0] + "：" + p[2]).join("\n"),
-      w: cv.width, h: cv.height,
-      colors: Img.dominant(cv), hash: Img.aHash(cv)
-    };
-  }
-  return { make, count: SCRIPTS.length };
-})();
 
 /* ============================================================================
    5. OCR（按需加载，失败不阻断）
    ========================================================================== */
 const Ocr = (() => {
-  let worker = null, loading = null, enabled = false;
+  let worker = null, loading = null;
+  // 记住用户的选择，刷新后开关状态不会偷偷变回关闭
+  let enabled = (() => { try { return localStorage.getItem("wb_ocr") === "on"; } catch (e) { return false; } })();
   const status = () => $("#ocrStatus");
 
   function setText(t) { const el = status(); if (el) el.textContent = t; }
@@ -1873,7 +1840,11 @@ const Ocr = (() => {
 
   return {
     get enabled() { return enabled; },
-    setEnabled(v) { enabled = v; },
+    ensure,                                  // 设置里开启时要用它预热引擎，之前忘了导出
+    setEnabled(v) {
+      enabled = !!v;
+      try { localStorage.setItem("wb_ocr", enabled ? "on" : "off"); } catch (e) {}
+    },
     async run(file, onProgress) {
       const w = await ensure(onProgress);
       const r = await w.recognize(file);
@@ -1989,7 +1960,7 @@ function renderWall(animate) {
         <div class="card-foot">
           <span class="cat" data-pending="${it.cat === 'inbox' ? 1 : 0}"><span class="dot" style="background:${c.hue}"></span>${esc(c.name)}</span>
           <button class="owner" data-owner="1" aria-label="看这位上传者的主页">
-            ${avHTML(it.ownerAv, 18)}<span>${esc(it.ownerName || "未署名")}</span>
+            ${avHTML(it.ownerAv, 18, "", it.ownerName || "未署名")}<span>${esc(it.ownerName || "未署名")}</span>
           </button>
           <span class="spacer"></span>
           <span class="micro"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2.6 4.4A1.8 1.8 0 014.4 2.6h7.2a1.8 1.8 0 011.8 1.8v4.4a1.8 1.8 0 01-1.8 1.8H7l-3.4 2.6z" stroke="currentColor" stroke-width="1.4"/></svg>${(m.comments || []).length}</span>
@@ -2021,6 +1992,7 @@ function renderWall(animate) {
       }
     });
   });
+  Avatars.soon();
   applyAmbient();
 }
 
@@ -2112,6 +2084,26 @@ function closeSheet() {
 }
 function refreshSheetIf(it) { if (S.openId === it.id) renderSheet(it, true); }
 
+/* ----------------------------------------------------------------------------
+   大图查看：点开帖子里的截图后全屏看原图（轻点任意处 / Esc 关闭）
+   -------------------------------------------------------------------------- */
+function openLightbox(src, path) {
+  const lb = $("#lightbox"), img = $("#lbImg");
+  if (!lb || !img) return;
+  img.dataset.path = path || "";
+  img.dataset.revived = "";
+  img.onerror = () => Urls.revive(img, img.dataset.path);
+  img.src = (path && Urls.get(path)) || src || "";
+  lb.classList.add("on");
+  lb.setAttribute("aria-hidden", "false");
+}
+function closeLightbox() {
+  const lb = $("#lightbox");
+  if (!lb || !lb.classList.contains("on")) return;
+  lb.classList.remove("on");
+  lb.setAttribute("aria-hidden", "true");
+}
+
 function renderSheet(it, keepScroll) {
   const c = catOf(it.cat), m = Meta.of(it.id);
   const isMyItem = !!(User.me && it.ownerId && it.ownerId === User.me.id);
@@ -2129,13 +2121,37 @@ function renderSheet(it, keepScroll) {
     <div class="hero"><img src="${it.data || ""}" alt="${esc(it.title)}" data-path="${esc(it.path || "")}"></div>
 
     <button class="author" id="seeAuthor">
-      ${avHTML(it.ownerAv, 34)}
+      ${avHTML(it.ownerAv, 34, "", it.ownerName || "未署名")}
       <span class="txt">
         <span class="nm">${esc(it.ownerName || "未署名")}</span>
         <span class="sb">传于 ${new Date(it.at).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
       </span>
       <span class="go">看主页 →</span>
     </button>
+
+    <div class="sec">
+      <h4>评论 ${m.comments.length ? "· " + m.comments.length : ""}<span class="tagline"></span></h4>
+      <div class="thread" id="thread">${
+        m.comments.length ? m.comments.map((cm, i) => `
+          <div class="bub enter ${isMine(cm) ? "me" : ""}" style="--d:${Math.min(i, 8) * 55}ms">
+            <button style="border:0;background:none;padding:0;cursor:pointer" data-who="${esc(cm.who)}" aria-label="看 ${esc(cm.who)} 的主页">${avHTML(cm.av || { type: "emoji", value: cm.who.slice(0, 1) }, 32, "", cm.who)}</button>
+            <div class="bwrap">
+              <p class="who">${esc(cm.who)} · ${timeAgo(cm.at)}</p>
+              <div class="txt">${esc(cm.text)}</div>
+              ${isMine(cm) && cm.id ? `<button class="del" data-del="${cm.id}">删除</button>` : ""}
+            </div>
+          </div>`).join("") : '<p class="emptyline">还没有人说话。评论区长得像聊天框，随手吐槽就行。</p>'
+      }</div>
+      <p class="composing-as">
+        ${meHTML(22)}
+        <span>以 <b>${esc(User.me ? User.me.nick : "我")}</b> 的身份评论</span>
+        <button id="toProfile">改名 / 换头像</button>
+      </p>
+      <div class="composer">
+        <textarea class="txt-input" id="cText" rows="1" placeholder="说点什么…（Enter 发送）"></textarea>
+        <button class="send" id="cSend">发送</button>
+      </div>
+    </div>
 
     <div class="sec">
       <h4>自动归档<span class="tagline"></span>
@@ -2181,33 +2197,17 @@ function renderSheet(it, keepScroll) {
       <button class="btn ghost danger" id="delMoment">删掉这张截图</button>
       <p class="hintline">只有你能删自己传的图。删除会同时移除云端文件和记录，无法撤销。</p>
     </div>` : ""}
-
-    <div class="sec">
-      <h4>评论 ${m.comments.length ? "· " + m.comments.length : ""}<span class="tagline"></span></h4>
-      <div class="thread" id="thread">${
-        m.comments.length ? m.comments.map((cm, i) => `
-          <div class="bub enter ${isMine(cm) ? "me" : ""}" style="--d:${Math.min(i, 8) * 55}ms">
-            <button style="border:0;background:none;padding:0;cursor:pointer" data-who="${esc(cm.who)}" aria-label="看 ${esc(cm.who)} 的主页">${avHTML(cm.av || { type: "emoji", value: cm.who.slice(0, 1) }, 32)}</button>
-            <div class="bwrap">
-              <p class="who">${esc(cm.who)} · ${timeAgo(cm.at)}</p>
-              <div class="txt">${esc(cm.text)}</div>
-              ${isMine(cm) && cm.id ? `<button class="del" data-del="${cm.id}">删除</button>` : ""}
-            </div>
-          </div>`).join("") : '<p class="emptyline">还没有人说话。评论区长得像聊天框，随手吐槽就行。</p>'
-      }</div>
-      <p class="composing-as">
-        ${meHTML(22)}
-        <span>以 <b>${esc(User.me ? User.me.nick : "我")}</b> 的身份评论</span>
-        <button id="toProfile">改名 / 换头像</button>
-      </p>
-      <div class="composer">
-        <textarea class="txt-input" id="cText" rows="1" placeholder="说点什么…（Enter 发送）"></textarea>
-        <button class="send" id="cSend">发送</button>
-      </div>
-    </div>`;
+`;
 
   const heroImg = $(".hero img", body);
-  if (heroImg) heroImg.addEventListener("error", () => Urls.revive(heroImg, heroImg.dataset.path));
+  if (heroImg) {
+    heroImg.addEventListener("error", () => Urls.revive(heroImg, heroImg.dataset.path));
+    heroImg.addEventListener("click", e => {
+      e.stopPropagation();
+      openLightbox(it.data, it.path);
+    });
+  }
+  $(".hero", body) && $(".hero", body).setAttribute("title", "点一下看大图");
 
   $$("#thread [data-del]").forEach(b => b.addEventListener("click", async () => {
     const id = Number(b.dataset.del);
@@ -2307,6 +2307,7 @@ function renderSheet(it, keepScroll) {
     }
   });
 
+  Avatars.soon();
   if (keepScroll) body.scrollTop = sy;
 }
 /* 这条评论是不是我自己发的：优先认身份 ID，兼容早期只有昵称的数据 */
@@ -2476,20 +2477,8 @@ async function ingest(files) {
   await runPipeline(arr);
 }
 
-async function loadSamples(n) {
-  const pseudo = [];
-  for (let i = 0; i < n; i++) {
-    const s = Sample.make(S.items.length + i, i === 1);   // 第二张做成「长截图」
-    const blob = await (await fetch(s.dataUrl)).blob();
-    const f = new File([blob], s.name, { type: "image/jpeg" });
-    f._text = s.text;                                     // 文字是真的，直接喂给归类引擎
-    pseudo.push(f);
-  }
-  await ingest(pseudo);
-}
 
 $("#dockUpload").onclick = $("#emptyUpload").onclick = () => $("#filePick").click();
-$("#dockSample").onclick = $("#emptySample").onclick = () => loadSamples(4);
 $("#filePick").onchange = e => { ingest(e.target.files); e.target.value = ""; };
 
 document.addEventListener("paste", e => {
@@ -2514,16 +2503,51 @@ window.addEventListener("drop", e => {
    12. 导航收缩（液态玻璃的核心行为）+ 指针高光
    ========================================================================== */
 let lastY = window.scrollY, ticking = false;
+
+/* 筛选行贴在导航的真实底边排布 —— 两者都是固定定位，
+   各自写死 top 偏移的话，只要导航收缩或机型安全区稍有不同就会撞在一起。
+   顺带把「内容从哪开始」也算出来，交给 --topbar-h，卡片永远不会藏到筛选行后面。 */
+function syncTopbar() {
+  const nav = $("#nav"), f = $("#filters");
+  if (!nav || !f) return;
+  const b = nav.getBoundingClientRect().bottom;
+  if (b <= 0) return;
+  const top = Math.round(b + 8);
+  f.style.top = top + "px";
+  const fh = f.offsetHeight || 46;
+  document.documentElement.style.setProperty("--topbar-h", (top + fh + 14) + "px");
+}
+let followUntil = 0;
+function followTopbar(ms) {                 // 导航形变有过渡动画，跟着它走完
+  followUntil = Math.max(followUntil, performance.now() + ms);
+  if (followTopbar._on) return;
+  followTopbar._on = true;
+  const step = () => {
+    syncTopbar();
+    if (performance.now() < followUntil) requestAnimationFrame(step);
+    else followTopbar._on = false;
+  };
+  requestAnimationFrame(step);
+}
+
 window.addEventListener("scroll", () => {
   if (ticking) return; ticking = true;
   requestAnimationFrame(() => {
     const y = window.scrollY;
     const nav = $("#nav");
+    const before = nav.dataset.shrunk;
     if (y > 90 && y > lastY) nav.dataset.shrunk = "1";
     else if (y < lastY - 4 || y < 60) nav.dataset.shrunk = "0";
+    if (nav.dataset.shrunk !== before) followTopbar(760);
+    syncTopbar();
     lastY = y; ticking = false;
   });
 }, { passive:true });
+
+window.addEventListener("resize", () => { syncTopbar(); followTopbar(320); }, { passive:true });
+syncTopbar();
+window.addEventListener("load", () => followTopbar(600));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => followTopbar(200)).catch(() => {});
 
 document.addEventListener("pointermove", e => {
   const t = e.target.closest && e.target.closest(".glass, .chip, .tool");
@@ -2538,6 +2562,9 @@ document.addEventListener("pointermove", e => {
    ========================================================================== */
 $("#q").addEventListener("input", e => { S.q = e.target.value; renderWall(false); });
 $("#shClose").onclick = closeSheet;
+$("#lightbox").addEventListener("click", closeLightbox);
+$("#lbClose").addEventListener("click", closeLightbox);
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
 $("#shLike").onclick = e => {
   const it = S.items.find(x => x.id === S.openId); if (!it) return;
   toggleLike(it, null, { clientX: e.clientX, clientY: e.clientY });
@@ -2561,18 +2588,43 @@ $$("[data-tw]").forEach(seg => {
     const v = b.dataset.v;
     if (key === "theme") {
       document.documentElement.dataset.theme = v;
-    } else if (key === "ocr") {
-      Ocr.setEnabled(v === "on");
-      $("#ocrStatus").textContent = v === "on"
-        ? "将联网加载中文模型（首次约 15MB），识别全部在本机完成，图片不上传。"
-        : "关闭时，可在详情里手动补录文字，归类引擎照常工作。";
-      if (v === "on" && !window.Tesseract) Ocr.ensure().catch(() => {});
     } else {
       document.documentElement.dataset[key] = v;
     }
     $$("button", seg).forEach(x => x.setAttribute("aria-pressed", x === b));
   });
 });
+
+/* ---------- 文字识别开关：状态写清楚，别让人猜 ---------- */
+function ocrStatusText() {
+  if (!Ocr.enabled) return "当前：已关闭 · 上传后可在详情页手动补录文字";
+  if (window.Tesseract) return "当前：已开启 · 识别全部在本机完成，截图不会因识别而上传";
+  return "当前：已开启 · 第一次识别时会下载中文语言包（约 15MB）";
+}
+function syncOcr() {
+  const sw = $("#ocrSwitch"), st = $("#ocrState"), el = $("#ocrStatus");
+  if (sw) sw.setAttribute("aria-checked", Ocr.enabled ? "true" : "false");
+  if (st) st.textContent = Ocr.enabled ? "开启" : "关闭";
+  if (el) el.textContent = ocrStatusText();
+}
+$("#ocrSwitch").onclick = () => {
+  const next = !Ocr.enabled;
+  Ocr.setEnabled(next);
+  syncOcr();
+  if (next) {
+    if (!window.Tesseract) {
+      const el = $("#ocrStatus");
+      if (el) el.textContent = "当前：已开启 · 正在准备识别引擎…";
+      Ocr.ensure().then(syncOcr).catch(syncOcr);
+    } else {
+      toast("已开启文字识别：上传时自动提取截图里的文字");
+    }
+  } else {
+    toast("已关闭文字识别：上传的截图不再自动提取文字", 2600);
+  }
+};
+syncOcr();
+$("#dockTweaks").addEventListener("click", syncOcr);
 $("#ambRange").addEventListener("input", e => {
   document.documentElement.style.setProperty("--ambient-strength", e.target.value / 100);
   $("#ambVal").textContent = e.target.value + "%";
@@ -2894,7 +2946,7 @@ const Profile = (() => {
 
     $("#pfInner").innerHTML = `
       <div class="pf-hero">
-        ${avHTML(p.av, 84)}
+        ${avHTML(p.av, 84, "", p.nick)}
         <div class="txt">
           <h1 class="pf-name">${esc(p.nick)}${mine ? '<span class="badge">这是你</span>' : ""}</h1>
           ${sub ? `<p class="pf-sub">${esc(sub)}</p>` : ""}
@@ -2990,6 +3042,7 @@ async function refreshUrls() {
     let dirty = false;
     S.items.forEach(it => { const u = Urls.get(it.path); if (u && u !== it.data) { it.data = u; dirty = true; } });
     if (dirty) renderWall(false);
+    Avatars.hydrate().catch(() => {});
   } catch (e) { logErr("refreshUrls", e); }
 }
 
