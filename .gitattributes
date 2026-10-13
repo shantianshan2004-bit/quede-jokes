@@ -1,0 +1,14 @@
+# 统一换行符，避免不同系统 clone 后文件被反复改写
+# 批处理必须是 CRLF，否则 cmd 解析多行括号块可能出错
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 其余按文本处理，仓库内统一存 LF
+* text=auto eol=lf
+
+# 图片等二进制，不做任何转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
