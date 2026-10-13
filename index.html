@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-theme="light" data-thickness="regular" data-motion="standard">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <link rel="icon" href="data:,">
 <title>缺德笑话 · 损友共享的截图墙</title>
 <style>
@@ -334,11 +334,14 @@ html[data-theme="dark"] .btn{ background:#F2F0EC; color:#131316; }
    ============================================================ */
 #dock{
   position:fixed; z-index:58; left:50%; transform:translateX(-50%);
+  /* width:max-content：fixed+left:50% 时浏览器按「视口减 left」预留宽度，窄屏会把按钮文字挤换行 */
+  width:max-content; max-width:calc(100vw - 24px);
   bottom:max(20px, env(safe-area-inset-bottom)); display:flex; align-items:center; gap:8px;
   padding:8px;
 }
 #dock .dock-btn{
   display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 18px;
+  white-space:nowrap; flex:0 0 auto;
   border:0; border-radius:999px; cursor:pointer; font-size:14px; font-weight:500;
   background:transparent; color:var(--ink);
   transition:transform var(--d-fast) var(--e-spring), background var(--d-fast) linear, color var(--d-fast) linear;
@@ -692,7 +695,7 @@ html[data-theme="dark"] .author{ background:rgba(255,255,255,.06); }
 .pf-head .grow{ flex:1 1 auto; min-width:0; }
 .pf-head .t{ margin:0; font-size:15px; font-weight:600; }
 .pf-head .s{ margin:2px 0 0; font-size:12px; color:var(--ink-2); }
-.btn.sm{ height:34px; padding:0 14px; font-size:13px; }
+.btn.sm{ height:34px; padding:0 14px; font-size:13px; white-space:nowrap; flex:0 0 auto; }
 .pf-scroll{ flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; padding:24px 16px 60px; }
 .pf-inner{ width:min(980px,100%); margin:0 auto; }
 .pf-hero{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
@@ -750,6 +753,30 @@ html[data-theme="dark"] .pf-edit{ background:rgba(255,255,255,.06); }
 .pf-empty{ font-size:13.5px; color:var(--ink-3); padding:28px 4px; text-align:center; line-height:1.7; }
 .pf-note{ font-size:11.5px; color:var(--ink-3); margin:14px 0 0; line-height:1.65; }
 .btn.danger{ color:var(--warm-ink); box-shadow:inset 0 0 0 1.5px var(--warm-soft); }
+/* 云端版新增：微信登录按钮、连不上的兜底页、归档失败态 */
+.btn.wx{
+  background:#07C160; color:#fff; margin-top:18px;
+  box-shadow:0 10px 26px -12px rgba(7,193,96,.72);
+}
+html[data-theme="dark"] .btn.wx{ background:#0AA85A; color:#fff; }
+.btn.wx:hover{ box-shadow:0 16px 34px -14px rgba(7,193,96,.82); }
+.btn.wx[disabled]{ opacity:.62; transform:none; box-shadow:none; }
+.btn.wx svg{ flex:0 0 auto; }
+#gateProfile .gate-sub{ margin-bottom:18px; }
+
+#fatal{
+  position:fixed; inset:0; z-index:130; display:grid; place-items:center; padding:22px;
+  background:rgba(18,17,15,.42);
+  -webkit-backdrop-filter:blur(16px) saturate(140%); backdrop-filter:blur(16px) saturate(140%);
+}
+#fatal[hidden]{ display:none; }
+.fatal-card{ width:min(420px,100%); padding:30px 26px 22px; text-align:center; }
+.fatal-card h2{ font-size:19px; margin:0 0 8px; letter-spacing:-.01em; }
+.fatal-card p{ font-size:13.5px; color:var(--ink-2); line-height:1.7; margin:0 0 18px; }
+
+.stage[data-state="fail"] .icon{ background:var(--warm-soft); color:var(--warm-ink); }
+.stage[data-state="fail"] .out{ color:var(--warm-ink); }
+
 body.locked{ overflow:hidden; }
 
 @media (max-width:560px){
@@ -761,12 +788,98 @@ body.locked{ overflow:hidden; }
   .pf-hero{ gap:14px; }
 }
 
+/* ============================================================
+   手机端专项
+   判断依据：内容主体是聊天截图 = 大量小字。窄屏上「挤两列」会把字压到读不了，
+   所以手机上改成单列，宽度换可读性；长截图在墙上封顶，点开看全图。
+   ============================================================ */
+@media (max-width:700px){
+  /* 顶部：贴住安全区（刘海），收窄避免横向溢出 */
+  #nav{ top:max(var(--s3), env(safe-area-inset-top)); width:calc(100% - 20px); }
+  #nav .nav-stat{ display:none; }                 /* 手机上省掉「N 张」，把宽度让给搜索 */
+  .nav-inner{ padding:9px 10px 9px 12px; gap:8px; }
+  #nav[data-shrunk="1"]{ width:min(360px, calc(100% - 24px)); }
+  #filters{ top:calc(max(var(--s3), env(safe-area-inset-top)) + 58px); width:calc(100% - 20px); padding:4px 2px; }
+  #nav[data-shrunk="1"] ~ #filters{ top:calc(max(var(--s3), env(safe-area-inset-top)) + 52px); }
+  .chip{ height:38px; padding:0 13px; }
+
+  /* 单列：这是这次适配里最重要的一个决定 */
+  main{ padding:112px 14px calc(110px + env(safe-area-inset-bottom)); }
+  .wall{ columns:1; column-gap:0; }
+  .card{ margin-bottom:14px; border-radius:var(--r-md); }
+  .card:hover{ transform:none; }
+  .card-img img{ max-height:62vh; object-fit:cover; object-position:top; }
+
+  /* 触摸目标一律 ≥44px（Apple HIG / Material 的下限） */
+  .tool{ height:40px; padding:0 14px; font-size:13.5px; }
+  .iconbtn{ width:42px; height:42px; flex:0 0 auto; }
+  .btn{ height:44px; }
+  #dock{ bottom:max(12px, env(safe-area-inset-bottom)); padding:6px; gap:6px; }
+  #dock .dock-btn{ height:46px; padding:0 15px; }
+
+  /* 底部抽屉：用 dvh 跟随手机浏览器地址栏的伸缩，键盘弹出也不至于把输入框挡住 */
+  #sheet{ height:94dvh; }
+  .sheet-head{ padding:14px 16px 10px; }
+  .sheet-body{ padding:0 16px calc(22px + env(safe-area-inset-bottom)); }
+
+  /* iOS 上输入框字号 <16px 会被自动放大整页，所以手机上统一 16px */
+  input, textarea, select{ font-size:16px; }
+  .searchwell input{ font-size:16px; }
+  .searchwell{ height:40px; }
+
+  /* 个人主页 */
+  #profile{ padding-bottom:env(safe-area-inset-bottom); }
+  .pf-head{ padding:calc(12px + env(safe-area-inset-top)) 14px 12px; }
+  .pf-scroll{ padding:20px 14px calc(50px + env(safe-area-inset-bottom)); }
+  .pf-hero{ gap:14px; }
+  .pf-hero .txt{ flex:1 1 100%; }
+  .pf-name{ font-size:21px; }
+  .pf-stats{ grid-template-columns:repeat(2,1fr); gap:9px; margin-top:18px; }
+  .pf-stat{ padding:12px 11px; }
+  .pf-stat b{ font-size:19px; }
+  .pf-grid{ grid-template-columns:repeat(2,1fr); gap:10px; }
+  .pf-card img{ height:132px; }
+  .pf-tabs{ width:100%; }
+  .pf-tabs button{ min-height:44px; flex:1 0 auto; }
+
+  /* 进门页：矮屏或键盘弹出时整页可滚动，按钮不会被截掉 */
+  #gate{
+    align-items:flex-start; overflow-y:auto;
+    padding:max(16px, env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));
+  }
+  .gate-card{ padding:26px 20px 20px; }
+  .gate-title{ font-size:28px; }
+  .avatar-pick{ gap:8px; margin-bottom:18px; }
+
+  /* 归档流水线 */
+  #pipeline{ padding:0 14px; }
+  .stage .out{ font-size:11.5px; line-height:1.5; }
+
+  /* Tweaks 面板铺满宽度，不超出屏幕 */
+  #tweaks{ left:12px; right:12px; width:auto; bottom:calc(84px + env(safe-area-inset-bottom)); }
+}
+
+/* 触摸设备：去掉点按高亮、「悬停」效果不该在手指上残留 */
+@media (hover:none){
+  *{ -webkit-tap-highlight-color:transparent; }
+  button, .chip, .tool, .card, .dock-btn, [role="button"]{ touch-action:manipulation; }
+  .card:hover{ transform:none; box-shadow:0 1px 2px rgba(28,28,30,.05), 0 10px 28px -18px rgba(28,28,30,.22); }
+}
+
+/* 横屏矮屏：抽屉别顶到可见区域之外 */
+@media (max-height:520px){
+  #sheet{ height:96dvh; }
+  .card-img img{ max-height:70vh; }
+}
+
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important;
     transition-duration:.001ms !important; }
   .card{ opacity:1 !important; transform:none !important; }
 }
 </style>
+<!-- 云服务 SDK（CDN 形式：本项目是单文件、无构建步骤，按规范不引入打包器） -->
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
 </head>
 <body>
 
@@ -775,7 +888,7 @@ body.locked{ overflow:hidden; }
   <svg class="grain" width="100%" height="100%"><filter id="nz"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#nz)" opacity=".5"/></svg>
 </div>
 
-<!-- 进门：本地原型里的「登录」。接后端后这里换成真实会话（微信登录 / 邀请码） -->
+<!-- 进门：未登录 → 微信登录；已登录但没起名 → 起名挑头像 -->
 <div id="gate" hidden>
   <div class="gate-card glass" data-thickness="thick">
     <div class="gate-logo">
@@ -786,17 +899,40 @@ body.locked{ overflow:hidden; }
       </svg>
     </div>
     <h1 class="gate-title">缺德笑话</h1>
-    <p class="gate-sub">损友们的聊天截图墙。先进门报个名，才好在墙上认领自己那张缺德图。</p>
 
-    <label class="field"><span>你的昵称</span>
-      <input id="gateName" maxlength="10" placeholder="比如：阿豪" autocomplete="off">
-    </label>
+    <div id="gateLogin">
+      <p class="gate-sub">损友们的聊天截图墙。用微信登录进来，你传的图和评论会同步到所有人的手机上。</p>
+      <button class="btn wide wx" id="gateWx">
+        <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 3.4C4.9 3.9 1.8 6.6 1.8 9.9c0 1.9 1.1 3.6 2.9 4.7l-.7 2.2 2.5-1.3c.8.2 1.6.4 2.5.4h.5a5.4 5.4 0 01-.2-1.5c0-3 2.9-5.4 6.5-5.4h.6C15.8 5.1 12.7 3.1 9 3.4z" fill="currentColor"/>
+          <path d="M22.2 14.2c0-2.6-2.6-4.7-5.8-4.7s-5.8 2.1-5.8 4.7 2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2 1.1-.5-1.8c1.4-.9 2.3-2.1 2.3-3.7z" fill="currentColor" opacity=".72"/>
+        </svg>
+        微信登录
+      </button>
+      <p class="gate-note" id="gateWxNote">登录只用来确认你是谁，拿不到你的密码。墙上的内容只有登录进来的人能看——不会出现在搜索引擎里。</p>
+    </div>
 
-    <p class="field-label">挑个头像</p>
-    <div class="avatar-pick" id="gatePicks"></div>
+    <div id="gateProfile" hidden>
+      <p class="gate-sub">第一次来，起个名字、挑个头像。以后发的截图和评论就署这个名，以后也能随时改。</p>
 
-    <button class="btn wide" id="gateEnter" disabled>进场</button>
-    <p class="gate-note">当前是本地原型：身份只保存在这台设备上，还没有真正的账号密码。<br>接入后端后会换成真实登录（微信登录或邀请码），并同步到朋友的手机上。</p>
+      <label class="field"><span>你的昵称</span>
+        <input id="gateName" maxlength="10" placeholder="比如：阿豪" autocomplete="off">
+      </label>
+
+      <p class="field-label">挑个头像</p>
+      <div class="avatar-pick" id="gatePicks"></div>
+
+      <button class="btn wide" id="gateEnter" disabled>进场</button>
+      <p class="gate-note">昵称和头像存在云端。换台手机用微信登录，还是你，传过的图和评论都在。</p>
+    </div>
+  </div>
+</div>
+
+<div id="fatal" hidden>
+  <div class="fatal-card glass" data-thickness="thick">
+    <h2>连不上</h2>
+    <p id="fatalMsg"></p>
+    <button class="btn" id="fatalRetry">重新加载</button>
   </div>
 </div>
 
@@ -950,106 +1086,360 @@ function toast(msg, ms) {
 }
 
 /* ============================================================================
-   1. 存储
-   IndexedDB 存图片二进制；localStorage 存元数据。
-   file:// 下 IndexedDB 可能被禁用 → 自动降级为内存存储并告知用户。
+   0.5 云服务客户端
+   publicConfig 的四个值来自云服务开通结果，是唯一允许进入前端的配置。
+   publishableKey 只标识「哪个应用」，本身不带权限——服务端还会做精确 Origin 校验。
    ========================================================================== */
-const Store = (() => {
-  const DB = "momentwall", ST = "items";
-  let dbp = null, memOnly = false;
-  const mem = { items: [] };
+const publicConfig = {
+  resourceId: "wbcs_AI3KZYB1urSPYpFMKGhvHo",
+  endpoint: "https://quede-jokes.app.workbuddy.host",
+  oauthRelayBaseUrl: "https://www.workbuddy.cn/v2/as/genie-baas/oauth",
+  publishableKey: "wbpk_KebYnbTuAARW7Ii4cyKJ6j_q0OFoKsU3Hi0r4ulL3HYdWF7l9CqAjzG"
+};
 
-  function openDB() {
-    if (dbp) return dbp;
-    dbp = new Promise((res, rej) => {
-      let req;
-      try { req = indexedDB.open(DB, 1); } catch (e) { return rej(e); }
-      req.onupgradeneeded = () => { req.result.createObjectStore(ST, { keyPath: "id" }); };
-      req.onsuccess = () => res(req.result);
-      req.onerror = () => rej(req.error);
-      setTimeout(() => rej(new Error("idb timeout")), 2500);
+let cloud = null, bootErr = "";
+try {
+  if (window.WorkBuddyCloud && window.WorkBuddyCloud.createWorkBuddyCloud) {
+    cloud = window.WorkBuddyCloud.createWorkBuddyCloud({
+      endpoint: publicConfig.endpoint,
+      oauthRelayBaseUrl: publicConfig.oauthRelayBaseUrl,
+      publishableKey: publicConfig.publishableKey
     });
-    return dbp;
+  } else {
+    bootErr = "云服务组件没能加载（多半是网络被挡住了）。检查网络后刷新页面。";
   }
-  async function tx(mode, fn) {
-    const db = await openDB();
-    return new Promise((res, rej) => {
-      const t = db.transaction(ST, mode), s = t.objectStore(ST);
-      const r = fn(s);
-      t.oncomplete = () => res(r && r.result);
-      t.onerror = () => rej(t.error);
-    });
+} catch (e) {
+  bootErr = "云服务初始化失败：" + ((e && e.message) || e);
+}
+const CloudOk = () => !!(cloud && cloud.auth && cloud.database && cloud.storage);
+
+/* 把各种失败翻译成人话：不签到的错误、网络抖动、权限不足、额度用尽都要有明确说法 */
+function errText(e) {
+  if (!e) return "出错了，再试一次";
+  const k = e.kind;
+  if (k === "unauthenticated" || k === "invalid_grant") return "登录状态失效了，请重新登录";
+  if (k === "network" || k === "backend-unavailable") return "网络不太顺，稍后再试";
+  if (k === "invalid-request") return e.message || "请求不对";
+  if (e.code === "42501") return "没有权限做这件事";
+  if (e.code === "42P01") return "数据表还没准备好，请联系维护者";
+  if (e.code === "23505") return "这条已经存在了";
+  if (e.code === "PGRST301") return "登录状态失效了，请重新登录";
+  const m = e.message || String(e);
+  if (/quota|limit|exceed|exhaust/i.test(m)) return "云端额度用完了，暂时存不进去";
+  return m;
+}
+function logErr(where, e) {
+  /* 只记阶段与消息，绝不把令牌、手机号、文件地址写进日志 */
+  console.error("[cloud] " + where, JSON.stringify({ stage: where, message: (e && (e.message || e.kind)) || String(e) }));
+}
+
+/* ============================================================================
+   0.6 签名下载地址
+   图存在云存储里的私有路径上，只有登录用户能读，展示要走签名地址（最长 1 小时）。
+   这里做一层缓存 + 批量签名 + 提前 3 分钟续签，避免墙上图片集体挂掉。
+   ========================================================================== */
+const Urls = (() => {
+  const TTL = 3600, SKEW = 180;
+  const map = new Map();
+
+  const alive = e => e && (Date.now() / 1000 < e.exp - SKEW);
+  function get(path) { const e = map.get(path); return alive(e) ? e.url : null; }
+
+  async function sign(paths) {
+    if (!CloudOk()) return;
+    const want = Array.from(new Set(paths.filter(Boolean))).filter(p => !alive(map.get(p)));
+    if (!want.length) return;                       // 空数组会被 SDK 直接拒绝，必须挡在前面
+    try {
+      const res = await cloud.storage.createSignedUrls(want, TTL);
+      if (res.error) { logErr("signedUrls", res.error); return; }
+      const exp = Date.now() / 1000 + TTL;
+      (res.data || []).forEach((r, i) => {
+        const p = (r && r.path) || want[i];
+        if (r && r.signedUrl && p) map.set(p, { url: r.signedUrl, exp });
+      });
+    } catch (e) { logErr("signedUrls", e); }
   }
 
-  async function all() {
-    try { return (await tx("readonly", s => s.getAll())) || []; }
-    catch (e) { memOnly = true; return mem.items.slice(); }
+  /* 图片真挂掉时（签名过期、网络中断）强制重签一次并重新加载 */
+  async function revive(img, path) {
+    if (!img || !path || img.dataset.revived === "1") return;
+    img.dataset.revived = "1";
+    map.delete(path);
+    await sign([path]);
+    const u = get(path);
+    if (u) img.src = u;
   }
-  async function put(rec) {
-    try { await tx("readwrite", s => s.put(rec)); }
-    catch (e) {
-      memOnly = true;
-      const i = mem.items.findIndex(x => x.id === rec.id);
-      if (i >= 0) mem.items[i] = rec; else mem.items.push(rec);
-    }
-  }
-  async function del(id) {
-    try { await tx("readwrite", s => s.delete(id)); }
-    catch (e) { memOnly = true; mem.items = mem.items.filter(x => x.id !== id); }
-  }
-  return { all, put, del, get memOnly() { return memOnly; } };
-})();
-
-/* 评论 / 点赞 单独存 localStorage（可读、好迁移） */
-const Meta = (() => {
-  const K = "momentwall.meta.v1", N = "momentwall.nick.v1";
-  let cache = null;
-  function load() {
-    if (cache) return cache;
-    try { cache = JSON.parse(localStorage.getItem(K)) || {}; }
-    catch (e) { cache = {}; }
-    return cache;
-  }
-  function save() { try { localStorage.setItem(K, JSON.stringify(cache)); } catch (e) {} }
-  return {
-    of(id) { const m = load(); return m[id] || (m[id] = { likes: 0, liked: false, comments: [] }); },
-    raw(id) { const m = load(); return m[id] || null; },
-    touch(id, patch) { const m = load(); m[id] = Object.assign(this.of(id), patch); save(); return m[id]; },
-    nick() { try { return localStorage.getItem(N) || ""; } catch (e) { return ""; } },
-    setNick(v) { try { localStorage.setItem(N, v); } catch (e) {} }
-  };
+  return { get, sign, revive, TTL };
 })();
 
 /* ============================================================================
-   1.5 身份 —— 本地原型里的「登录」
-   真实系统里这里是会话 + 账号；原型里把身份存进 localStorage，
-   但同样用「不可变的用户 ID」来关联截图与评论，改昵称不会丢署名。
+   1. 数据层（云端）
+   表：moments / comments / likes / profiles，全部开启 RLS 且只授权给已登录用户。
+   owner_id 一律由数据库 DEFAULT auth.uid() 填，前端绝不发送。
+   ========================================================================== */
+const PAGE = 300;                                  // 首屏上限，先保证手机加载快
+
+function parseColors(t) {
+  if (!t) return [];
+  try { const a = JSON.parse(t); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function rowToItem(r) {
+  return {
+    id: String(r.id), rowId: r.id,
+    ownerId: r.owner_id || null,
+    ownerName: r.owner_name || "未署名",
+    ownerAv: avFromText(r.owner_av),
+    path: r.image_path || null,
+    data: Urls.get(r.image_path),
+    w: r.image_w || 0, h: r.image_h || 0,
+    colors: parseColors(r.accent), hash: r.hash || null,
+    cat: r.cat || "inbox", confidence: r.confidence || "low",
+    hits: r.hits || [], runners: r.runners || [],
+    tags: r.tags || [], speakers: r.speakers || [], mood: r.mood || "中性",
+    isGroup: !!r.is_group, text: r.body_text || "",
+    manual: !!r.manual_cat, title: r.title || "（无题）",
+    at: Date.parse(r.created_at) || Date.now()
+  };
+}
+function rowToComment(r) {
+  return {
+    id: r.id, uid: r.owner_id,
+    who: r.who || "无名损友", av: avFromText(r.av),
+    text: r.body_text || "", at: Date.parse(r.created_at) || Date.now()
+  };
+}
+
+const Repo = (() => {
+  /* 用真实的昵称/头像覆盖记录里的快照 —— 这样一来改名之后，
+     历史截图和评论的署名会跟着更新，靠的是不可变的用户 ID 而不是名字 */
+  function applyProfiles() {
+    const P = S.profiles;
+    S.items.forEach(it => {
+      const p = it.ownerId && P[it.ownerId];
+      if (p) { it.ownerName = p.nick; it.ownerAv = avFromText(p.av); }
+    });
+    Object.keys(S.comments).forEach(k => S.comments[k].forEach(cm => {
+      const p = cm.uid && P[cm.uid];
+      if (p) { cm.who = p.nick; cm.av = avFromText(p.av); }
+    }));
+  }
+
+  async function loadAll() {
+    const d = cloud.database;
+    const [me, ms, cs, ls] = await Promise.all([
+      d.from("profiles").select("owner_id,nick,av,bio,created_at"),
+      d.from("moments").select("*").order("created_at", { ascending: false }).limit(PAGE),
+      d.from("comments").select("*").order("created_at", { ascending: true }),
+      d.from("likes").select("moment_id,owner_id")
+    ]);
+    if (me.error) throw me.error;
+    if (ms.error) throw ms.error;
+
+    S.profiles = {};
+    (me.data || []).forEach(r => {
+      S.profiles[r.owner_id] = { id: r.owner_id, nick: r.nick, av: r.av, bio: r.bio || "", at: Date.parse(r.created_at) || Date.now() };
+    });
+
+    S.items = (ms.data || []).map(rowToItem);
+
+    /* 评论与点赞只保留挂在当前这批截图上的 */
+    const ids = new Set(S.items.map(i => i.rowId));
+    S.comments = {};
+    ((cs.error ? [] : cs.data) || []).forEach(r => {
+      if (!ids.has(r.moment_id)) return;
+      (S.comments[r.moment_id] = S.comments[r.moment_id] || []).push(rowToComment(r));
+    });
+    S.likes = {};
+    S.items.forEach(i => { S.likes[i.rowId] = { n: 0, mine: false }; });
+    const myId = User.session && User.session.user && User.session.user.id;
+    ((ls.error ? [] : ls.data) || []).forEach(r => {
+      const b = S.likes[r.moment_id];
+      if (!b) return;
+      b.n++;
+      if (myId && r.owner_id === myId) b.mine = true;
+    });
+
+    /* 批量签名：截图 + 上传头像，一次请求全签完 */
+    const paths = [];
+    S.items.forEach(it => { if (it.path) paths.push(it.path); });
+    Object.keys(S.profiles).forEach(k => { const a = avFromText(S.profiles[k].av); if (a && a.type === "img") paths.push(a.path); });
+    Object.keys(S.comments).forEach(k => S.comments[k].forEach(cm => { if (cm.av && cm.av.type === "img") paths.push(cm.av.path); }));
+    await Urls.sign(paths);
+
+    applyProfiles();
+    S.items.forEach(it => { it.data = Urls.get(it.path); });
+    return S.items;
+  }
+
+  /* 上传图片 → 写入一行。图片放 shared/<我的 uid>/ 下：所有登录用户可读，只有我能删 */
+  async function createItem(rec, dataUrl) {
+    const myId = User.session.user.id;
+    let path = cloud.storage.sharedPath(myId, "moments/" + uid() + ".jpg");
+    const blob = await (await fetch(dataUrl)).blob();
+    const up = await cloud.storage.upload(path, blob, { contentType: "image/jpeg", cacheControl: "3600" });
+    if (up.error) throw up.error;
+    if (up.data && up.data.path) path = up.data.path;
+
+    const row = {
+      owner_name: rec.ownerName, owner_av: avToText(rec.ownerAv),
+      image_path: path, image_w: rec.w, image_h: rec.h,
+      accent: JSON.stringify(rec.colors || []), hash: rec.hash,
+      cat: rec.cat, confidence: rec.confidence,
+      hits: rec.hits, runners: rec.runners, tags: rec.tags,
+      speakers: rec.speakers, mood: rec.mood, is_group: rec.isGroup,
+      body_text: rec.text, title: rec.title, manual_cat: false
+    };
+    const ins = await cloud.database.from("moments").insert(row).select().single();
+    if (ins.error) {
+      await cloud.storage.remove([path]).catch(() => {});   // 事务性收尾：行没写成就别留孤儿文件
+      throw ins.error;
+    }
+    const it = rowToItem(ins.data);
+    await Urls.sign([path]);
+    it.data = Urls.get(path);
+    S.likes[it.rowId] = { n: 0, mine: false };
+    return it;
+  }
+
+  async function updateItem(it, patch) {
+    const up = await cloud.database.from("moments").update(patch).eq("id", it.rowId).select();
+    if (up.error) throw up.error;
+    if (!Array.isArray(up.data) || !up.data.length) throw { message: "这张不是你的，改不了" };
+  }
+
+  async function deleteItem(it) {
+    const del = await cloud.database.from("moments").delete().eq("id", it.rowId).select();
+    if (del.error) throw del.error;
+    if (!Array.isArray(del.data) || !del.data.length) throw { message: "这张不是你的，删不了" };
+    if (it.path) { try { await cloud.storage.remove([it.path]); } catch (e) { logErr("removeFile", e); } }
+  }
+
+  async function addComment(momentId, cm) {
+    const ins = await cloud.database.from("comments")
+      .insert({ moment_id: momentId, who: cm.who, av: avToText(cm.av), body_text: cm.text })
+      .select().single();
+    if (ins.error) throw ins.error;
+    return rowToComment(ins.data);
+  }
+  async function delComment(id) {
+    const del = await cloud.database.from("comments").delete().eq("id", id).select();
+    if (del.error) throw del.error;
+    if (!Array.isArray(del.data) || !del.data.length) throw { message: "这条不是你的，删不了" };
+  }
+  async function like(momentId, on) {
+    if (on) {
+      const ins = await cloud.database.from("likes").insert({ moment_id: momentId }).select();
+      if (ins.error) { if (ins.error.code === "23505") return; throw ins.error; }
+    } else {
+      const del = await cloud.database.from("likes").delete().eq("moment_id", momentId)
+        .eq("owner_id", User.session.user.id).select();
+      if (del.error) throw del.error;
+    }
+  }
+
+  /* 保存资料。头像若刚上传，先落到共享区：头像要让所有人都看得见，
+     所以不能用只属于我自己的 users/ 目录，必须放 shared/ */
+  async function saveProfile(p) {
+    const myId = User.session.user.id;
+    let avText = avToText(p.av);
+
+    if (p.av && p.av.type === "img" && !p.av.path && p.av.value) {
+      const newPath = cloud.storage.sharedPath(myId, "avatar/" + uid() + ".jpg");
+      const blob = await (await fetch(p.av.value)).blob();
+      const up = await cloud.storage.upload(newPath, blob, { contentType: "image/jpeg", cacheControl: "3600" });
+      if (up.error) throw up.error;
+      avText = "img:" + newPath;
+      const old = User.profile && avFromText(User.profile.av);
+      if (old && old.type === "img" && old.path && old.path !== newPath) {
+        try { await cloud.storage.remove([old.path]); } catch (e) { logErr("removeOldAvatar", e); }
+      }
+    }
+
+    const row = { nick: p.nick, av: avText, bio: p.bio || "", updated_at: new Date().toISOString() };
+    const up = await cloud.database.from("profiles").update(row).eq("owner_id", myId).select();
+    if (up.error) throw up.error;
+    if (Array.isArray(up.data) && up.data.length) return up.data[0];
+    const ins = await cloud.database.from("profiles").insert(row).select().single();
+    if (ins.error) throw ins.error;
+    return ins.data;
+  }
+
+  return { loadAll, createItem, updateItem, deleteItem, addComment, delComment, like, saveProfile, applyProfiles };
+})();
+
+/* 重新读一次自己的资料并落到内存。头像若是图片要先把地址签出来，否则显示不出来 */
+async function refreshMyProfile() {
+  if (!User.session) return null;
+  const myId = User.session.user.id;
+  const r = await cloud.database.from("profiles").select("*").eq("owner_id", myId).maybeSingle();
+  if (r.error) throw r.error;
+  if (!r.data) { User.setProfile(null); return null; }
+  const a = avFromText(r.data.av);
+  if (a && a.type === "img") await Urls.sign([a.path]);
+  User.setProfile({
+    id: r.data.owner_id, nick: r.data.nick, av: r.data.av,
+    bio: r.data.bio || "", at: Date.parse(r.data.created_at) || Date.now()
+  });
+  S.profiles[myId] = User.profile;
+  return User.profile;
+}
+
+/* 点赞与评论的同步视图：渲染代码是同步的，所以这里只读内存缓存，写操作走 Repo */
+const Meta = {
+  of(id) {
+    const it = S.items.find(x => x.id === id);
+    const b = (it && S.likes[it.rowId]) || { n: 0, mine: false };
+    return { likes: b.n, liked: b.mine, comments: (it && S.comments[it.rowId]) || [] };
+  },
+  raw(id) { return this.of(id); }
+};
+
+/* ============================================================================
+   1.5 身份 —— 微信登录 + 云端资料
+   身份由云服务会话确定；昵称和头像是我们自己的 profiles 表，
+   因为微信登录只负责「你是谁」，不承诺给昵称头像。
    ========================================================================== */
 const User = (() => {
-  const K = "momentwall.user.v1";
   const PRESETS = ["😂","🐶","🐱","💀","🤡","🧋","🀄","🦑","🐸","🍜"];
-  let me = null, loaded = false;
+  let session = null, prof = null;
 
-  function load() {
-    if (loaded) return me;
-    loaded = true;
-    try {
-      const raw = JSON.parse(localStorage.getItem(K));
-      if (raw && raw.nick) me = raw;
-    } catch (e) { me = null; }
-    if (me && !me.id) me.id = uid();
-    return me;
+  function build() {
+    if (!session) return null;
+    const id = session.user && session.user.id;
+    if (!id) return null;
+    return {
+      id: id,
+      nick: (prof && prof.nick) || "无名损友",
+      av: avFromText(prof && prof.av) || { type: "emoji", value: PRESETS[0] },
+      bio: (prof && prof.bio) || "",
+      at: (prof && prof.at) || Date.now(),
+      ready: !!(prof && prof.nick)
+    };
   }
-  function save(patch) {
-    load();
-    me = Object.assign({ id: (me && me.id) || uid(), at: (me && me.at) || Date.now(), bio: "" }, me || {}, patch || {});
-    try { localStorage.setItem(K, JSON.stringify(me)); }
-    catch (e) { toast("浏览器拒绝保存身份，刷新后会丢——图片太大时试着换张小的头像"); }
-    return me;
-  }
-  function logout() { loaded = true; me = null; try { localStorage.removeItem(K); } catch (e) {} }
-  return { get me() { return load(); }, save, logout, PRESETS };
+  return {
+    get me() { return build(); },
+    get session() { return session; },
+    get profile() { return prof; },
+    setSession(s) { session = s; },
+    setProfile(p) { prof = p; },
+    PRESETS
+  };
 })();
+
+/* 头像的存储格式：emoji:😂 或 img:<云存储路径>。图片地址要签名，所以内存里存 path */
+function avToText(av) {
+  if (!av) return null;
+  if (av.type === "img") return av.path ? "img:" + av.path : null;
+  return "emoji:" + (av.value || "");
+}
+function avFromText(t) {
+  if (!t) return null;
+  const s = String(t);
+  if (s.indexOf("img:") === 0) { const p = s.slice(4); return { type: "img", path: p, value: Urls.get(p) }; }
+  if (s.indexOf("emoji:") === 0) return { type: "emoji", value: s.slice(6) };
+  return { type: "emoji", value: s };
+}
+
 
 /* 头像底色：按完整码点哈希。emoji 是代理对，只取首字符会让所有表情同一个颜色 */
 function hueOf(s) {
@@ -1125,7 +1515,7 @@ async function fileToAvatar(file) {
 function applyMe() {
   const m = User.me;
   $("#navMe").innerHTML = avHTML(m ? m.av : null, 30);
-  $("#navMe").title = m ? m.nick + " · 个人主页" : "还没进门，点这里报名";
+  $("#navMe").title = m ? m.nick + " · 个人主页" : "还没登录，点这里用微信登录";
 }
 
 /* ============================================================================
@@ -1459,7 +1849,13 @@ const Ocr = (() => {
 /* ============================================================================
    6. 状态
    ========================================================================== */
-const S = { items: [], filter: "all", q: "", openId: null, pendingFiles: [] };
+const S = {
+  items: [], filter: "all", q: "", openId: null, pendingFiles: [],
+  likes: {},        // rowId -> { n, mine }
+  comments: {},     // rowId -> [comment]
+  profiles: {},     // uid   -> { id, nick, av, bio, at }
+  ready: false
+};
 
 /* ============================================================================
    7. 渲染
@@ -1498,6 +1894,7 @@ function renderFilters() {
 }
 
 function renderWall(animate) {
+  if (!S.ready) return;                 // 数据还没到就别动界面，否则会把「正在取图」覆盖掉
   const host = $("#wall"), list = visible();
   $("#statCount").textContent = S.items.length;
 
@@ -1538,7 +1935,7 @@ function renderWall(animate) {
     el.tabIndex = 0;
     el.innerHTML = `
       <div class="card-img">
-        <img src="${it.data}" alt="${esc(it.title)}" loading="lazy">
+        <img src="${it.data || ""}" alt="${esc(it.title)}" loading="lazy" data-path="${esc(it.path || "")}">
         ${it.h / it.w > 2.1 ? '<span class="tallsheet"></span>' : ""}
         <div class="card-tools">
           <button class="tool" data-act="like" data-on="${m.liked ? 1 : 0}" aria-label="点赞">
@@ -1567,6 +1964,8 @@ function renderWall(animate) {
   host.appendChild(frag);
 
   $$(".card", host).forEach(el => {
+    const im = $("img[data-path]", el);
+    if (im) im.addEventListener("error", () => Urls.revive(im, im.dataset.path));
     el.addEventListener("click", e => {
       const act = e.target.closest("[data-act]");
       const it = S.items.find(x => x.id === el.dataset.id);
@@ -1603,18 +2002,28 @@ function applyAmbient() {
 /* ============================================================================
    8. 点赞
    ========================================================================== */
-function toggleLike(it, btn, ev) {
-  const m = Meta.of(it.id);
-  const next = { liked: !m.liked, likes: Math.max(0, m.likes + (m.liked ? -1 : 1)) };
-  Meta.touch(it.id, next);
+/* 点赞：先动界面（立刻有反馈），失败再改回来。一人一赞由数据库唯一约束兜底 */
+async function toggleLike(it, btn, ev) {
+  if (!User.session) { toast("先登录才能点赞"); Gate.openLogin(); return; }
+  const b = S.likes[it.rowId]; if (!b) return;
+  const want = !b.mine;
+  b.mine = want; b.n = Math.max(0, b.n + (want ? 1 : -1));
+
   if (btn) {
-    btn.dataset.on = next.liked ? "1" : "0";
-    const n = $(".num", btn); if (n) n.textContent = next.likes;
-    btn.animate([{ transform: "scale(1)" }, { transform: "scale(1.34)" }, { transform: "scale(.92)" }, { transform: "scale(1)" }],
+    btn.dataset.on = want ? "1" : "0";
+    const n = $(".num", btn); if (n) n.textContent = b.n;
+    if (!RM.matches) btn.animate([{ transform: "scale(1)" }, { transform: "scale(1.34)" }, { transform: "scale(.92)" }, { transform: "scale(1)" }],
       { duration: 620, easing: "cubic-bezier(.34,1.56,.64,1)" });
   }
-  if (next.liked && ev) burst(ev.clientX, ev.clientY);
+  if (want && ev) burst(ev.clientX, ev.clientY);
   refreshSheetIf(it);
+
+  try { await Repo.like(it.rowId, want); }
+  catch (e) {
+    b.mine = !want; b.n = Math.max(0, b.n + (want ? -1 : 1));
+    renderWall(false); refreshSheetIf(it);
+    toast(errText(e));
+  }
 }
 function burst(x, y) {
   if (RM.matches) return;
@@ -1669,6 +2078,7 @@ function refreshSheetIf(it) { if (S.openId === it.id) renderSheet(it, true); }
 
 function renderSheet(it, keepScroll) {
   const c = catOf(it.cat), m = Meta.of(it.id);
+  const isMyItem = !!(User.me && it.ownerId && it.ownerId === User.me.id);
   const body = $("#shBody"), sy = body.scrollTop;
   $("#shTitle").textContent = it.title;
   $("#shSub").innerHTML = `${esc(c.name)} · ${it.w}×${it.h} · ${new Date(it.at).toLocaleDateString("zh-CN")}`;
@@ -1680,7 +2090,7 @@ function renderSheet(it, keepScroll) {
   const confHint = it.confidence === "high" ? "依据充分" : it.confidence === "mid" ? "依据一般，可手动改" : "依据不足，建议补录文字";
 
   body.innerHTML = `
-    <div class="hero"><img src="${it.data}" alt="${esc(it.title)}"></div>
+    <div class="hero"><img src="${it.data || ""}" alt="${esc(it.title)}" data-path="${esc(it.path || "")}"></div>
 
     <button class="author" id="seeAuthor">
       ${avHTML(it.ownerAv, 34)}
@@ -1730,6 +2140,12 @@ function renderSheet(it, keepScroll) {
       <div class="ocr" id="ocrBox">${it.text ? esc(it.text) : "（还没有文字。开启 OCR，或点「手动补录」把截图里的对话打进来，归类引擎会照样跑。）"}</div>
     </div>
 
+    ${isMyItem ? `
+    <div class="sec">
+      <button class="btn ghost danger" id="delMoment">删掉这张截图</button>
+      <p class="hintline">只有你能删自己传的图。删除会同时移除云端文件和记录，无法撤销。</p>
+    </div>` : ""}
+
     <div class="sec">
       <h4>评论 ${m.comments.length ? "· " + m.comments.length : ""}<span class="tagline"></span></h4>
       <div class="thread" id="thread">${
@@ -1754,27 +2170,52 @@ function renderSheet(it, keepScroll) {
       </div>
     </div>`;
 
-  $$("#thread [data-del]").forEach(b => b.addEventListener("click", () => {
-    const list = Meta.of(it.id).comments.filter(x => x.id !== b.dataset.del);
-    Meta.touch(it.id, { comments: list });
-    renderSheet(it, true); renderWall(false); toast("评论已删除");
+  const heroImg = $(".hero img", body);
+  if (heroImg) heroImg.addEventListener("error", () => Urls.revive(heroImg, heroImg.dataset.path));
+
+  $$("#thread [data-del]").forEach(b => b.addEventListener("click", async () => {
+    const id = Number(b.dataset.del);
+    b.disabled = true;
+    try {
+      await Repo.delComment(id);
+      S.comments[it.rowId] = (S.comments[it.rowId] || []).filter(x => x.id !== id);
+      renderSheet(it, true); renderWall(false); toast("评论已删除");
+    } catch (e) { b.disabled = false; toast(errText(e)); }
   }));
 
   $$("#catPick [data-c]").forEach(b => b.addEventListener("click", async () => {
     if (b.dataset.c === it.cat && it.manual) return;
-    it.cat = b.dataset.c;
-    it.manual = true;
-    await Store.put(it);
+    const prev = { cat: it.cat, manual: it.manual };
+    it.cat = b.dataset.c; it.manual = true;
     renderFilters(); renderWall(false); renderSheet(it, true);
-    toast("已改为「" + catOf(it.cat).name + "」，机器判断已被你覆盖");
+    try {
+      await Repo.updateItem(it, { cat: it.cat, manual_cat: true });
+      toast("已改为「" + catOf(it.cat).name + "」，机器判断已被你覆盖");
+    } catch (e) {
+      it.cat = prev.cat; it.manual = prev.manual;
+      renderFilters(); renderWall(false); renderSheet(it, true);
+      toast(errText(e));
+    }
   }));
 
+  const dm = $("#delMoment");
+  if (dm) dm.addEventListener("click", async () => {
+    if (!window.confirm("删掉这张截图？云端的文件和记录会一起删除，无法撤销。")) return;
+    dm.disabled = true;
+    try {
+      await Repo.deleteItem(it);
+      S.items = S.items.filter(x => x.id !== it.id);
+      delete S.likes[it.rowId]; delete S.comments[it.rowId];
+      closeSheet(); renderFilters(); renderWall(false); toast("已删除");
+    } catch (e) { dm.disabled = false; toast(errText(e)); }
+  });
+
   $("#toProfile").addEventListener("click", () => Profile.open());
-  $("#seeAuthor").addEventListener("click", () => Profile.open({ id: it.ownerId || null, nick: it.ownerName || "未署名", av: it.ownerAv || null }));
+  $("#seeAuthor").addEventListener("click", () => Profile.openUser(it.ownerId, it.ownerName, it.ownerAv));
   $$("#thread [data-who]").forEach(b => b.addEventListener("click", () => {
-    const nick = b.dataset.who;
-    const cm = (Meta.of(it.id).comments || []).find(c => c.who === nick);
-    Profile.open(cm && cm.uid ? { id: cm.uid, nick, av: cm.av } : { id: null, nick, av: cm ? cm.av : null });
+    const want = b.dataset.who;
+    const cm = (S.comments[it.rowId] || []).find(c => c.who === want);
+    Profile.openUser(cm ? cm.uid : null, want, cm ? cm.av : null);
   }));
   const ta = $("#cText");
   ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 120) + "px"; });
@@ -1783,35 +2224,51 @@ function renderSheet(it, keepScroll) {
   });
   $("#cSend").addEventListener("click", send);
 
-  function send() {
+  async function send() {
     const txt = ta.value.trim(); if (!txt) return;
     const m2 = User.me;
-    if (!m2) { Gate.open(); toast("先报个名，才好署名"); return; }
-    const cm = { id: uid(), uid: m2.id, who: m2.nick, av: m2.av, text: txt.slice(0, 500), at: Date.now() };
-    const list = Meta.of(it.id).comments.concat([cm]);
-    Meta.touch(it.id, { comments: list });
-    renderSheet(it, true); renderWall(false);
-    const t2 = $("#cText"); if (t2) { t2.value = ""; t2.style.height = "42px"; t2.focus(); }
-    const th = $("#thread");
-    if (th && th.lastElementChild) {
-      th.lastElementChild.animate(
-        [{ transform: "scale(.86)" }, { transform: "scale(1.04)" }, { transform: "scale(1)" }],
-        { duration: 560, easing: "cubic-bezier(.34,1.56,.64,1)" });
-      body.scrollTop = body.scrollHeight;
-    }
+    if (!m2 || !User.session) { toast("先登录，才好署名"); Gate.openLogin(); return; }
+    const btn = $("#cSend"); if (btn) btn.disabled = true;
+    try {
+      const cm = await Repo.addComment(it.rowId, { who: m2.nick, av: m2.av, text: txt.slice(0, 500) });
+      (S.comments[it.rowId] = S.comments[it.rowId] || []).push(cm);
+      renderSheet(it, true); renderWall(false);
+      const t2 = $("#cText"); if (t2) { t2.value = ""; t2.style.height = "42px"; }
+      const th = $("#thread");
+      if (th && th.lastElementChild) {
+        if (!RM.matches) th.lastElementChild.animate(
+          [{ transform: "scale(.86)" }, { transform: "scale(1.04)" }, { transform: "scale(1)" }],
+          { duration: 560, easing: "cubic-bezier(.34,1.56,.64,1)" });
+        body.scrollTop = body.scrollHeight;
+      }
+    } catch (e) { toast(errText(e)); }
+    finally { const b2 = $("#cSend"); if (b2) b2.disabled = false; }
   }
 
   $("#editText").addEventListener("click", async () => {
     const v = window.prompt("把截图里的对话贴进来（每行一条，格式：昵称：内容）", it.text || "");
     if (v == null) return;
+    const before = Object.assign({}, it);
     const a = Archive.analyze(v, it);
-    Object.assign(it, a, {
-      text: v.trim(), manual: false,
-      runners: a.runners.slice(1, 3).map(r => r.cat.name)
+    Object.assign(it, {
+      cat: a.category.key, confidence: a.confidence, hits: a.hits,
+      runners: a.runners.slice(1, 3).map(r => r.cat.name),
+      tags: a.tags, speakers: a.speakers, mood: a.mood,
+      isGroup: a.isGroup, title: a.title, text: v.trim(), manual: false
     });
-    await Store.put(it);
     renderSheet(it, true); renderWall(false); renderFilters();
-    toast("已重新归档为「" + catOf(it.cat).name + "」");
+    try {
+      await Repo.updateItem(it, {
+        cat: it.cat, confidence: it.confidence, hits: it.hits, runners: it.runners,
+        tags: it.tags, speakers: it.speakers, mood: it.mood, is_group: it.isGroup,
+        title: it.title, body_text: it.text, manual_cat: false
+      });
+      toast("已重新归档为「" + catOf(it.cat).name + "」");
+    } catch (e) {
+      Object.assign(it, before);
+      renderSheet(it, true); renderWall(false); renderFilters();
+      toast(errText(e));
+    }
   });
 
   if (keepScroll) body.scrollTop = sy;
@@ -1867,10 +2324,13 @@ function setState(k, st) {
 }
 
 async function runPipeline(files) {
+  if (!User.session || !User.me) { toast("先登录才能传图"); Gate.openLogin(); return; }
   const pipe = $("#pipeline"), scrim = $("#scrim");
   const uploader = User.me;                       // 谁传的，当场记下来
   $("#pipeSub").textContent = files.length > 1 ? `共 ${files.length} 张截图，逐张处理` : "1 张截图";
-  $("#pipeHint").textContent = Ocr.enabled ? "识别在本机浏览器里完成，图片不会离开这台设备。" : "文字识别当前关闭，可在 Tweaks 里开启；也能在详情页手动补录文字。";
+  $("#pipeHint").textContent = Ocr.enabled
+    ? "文字识别在本机完成；归档后的截图会存到云端，登录的朋友都能看到。"
+    : "文字识别当前关闭，可在 Tweaks 里开启；也能在详情页手动补录文字。";
   $("#pipeSkip").hidden = true; $("#pipeDone").hidden = true;
   $("#pipeSkip").onclick = () => { runPipeline._skip = true; };
   runPipeline._skip = false;
@@ -1881,7 +2341,7 @@ async function runPipeline(files) {
   requestAnimationFrame(() => { pipe.style.transition = ""; pipe.classList.add("on"); });
   if (RM.matches) await wait(40); else await wait(180);
 
-  const out = [];
+  const out = []; let failed = 0;
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
     $("#pipeSub").textContent = files.length > 1 ? `第 ${i + 1} / ${files.length} 张 · ${f.name}` : f.name;
@@ -1928,31 +2388,40 @@ async function runPipeline(files) {
     setOut("cls", (a.tags.length ? "标签：" + a.tags.join("、") : "暂无标签") + " · " + a.mood);
     setState("cls", "done");
 
-    /* 4 · 归入图墙 */
+    /* 4 · 上传到云端并归入图墙 */
     setState("save", "active"); setRail("save", .3);
+    setOut("save", "正在上传到云端…");
     const rec = {
-      id: uid(), at: Date.now(), name: f.name,
-      ownerId: uploader ? uploader.id : null, ownerName: uploader ? uploader.nick : "未署名", ownerAv: uploader ? uploader.av : null,
-      data: img.dataUrl, w: img.w, h: img.h,
-      colors: img.colors, hash: img.hash,
+      ownerName: uploader ? uploader.nick : "无名损友",
+      ownerAv: uploader ? uploader.av : null,
+      w: img.w, h: img.h, colors: img.colors, hash: img.hash,
       cat: a.category.key, confidence: a.confidence, hits: a.hits,
-      runners: a.runners.slice(1, 3).map(r => r.cat.name), manual: false,
+      runners: a.runners.slice(1, 3).map(r => r.cat.name),
       title: a.title, tags: a.tags, speakers: a.speakers, mood: a.mood,
       isGroup: a.isGroup, text: a.text
     };
-    const dup = S.items.find(x => x.hash && img.hash && Img.hamming(x.hash, img.hash) <= 3);
-    await Store.put(rec);
-    S.items.unshift(rec);
-    setRail("save", 1);
-    setOut("save", dup ? "已归档 · 和已有的一张很像，可能是重复" : "已归档");
-    setState("save", "done");
-    out.push(rec);
-    if (dup) toast("这张和已有的一张几乎一样，可能是重复上传");
+    try {
+      const saved = await Repo.createItem(rec, img.dataUrl);
+      S.items.unshift(saved);
+      setRail("save", 1);
+      setOut("save", dup ? "已上传 · 和已有的一张很像，可能是重复" : "已上传到云端");
+      setState("save", "done");
+      out.push(saved);
+      if (dup) toast("这张和已有的一张几乎一样，可能是重复上传");
+    } catch (e) {
+      logErr("upload", e);
+      setOut("save", "上传失败：" + errText(e));
+      setState("save", "fail");
+      failed++;
+      toast(errText(e), 3600);
+    }
     await wait(220);
   }
 
   renderFilters(); renderWall(true); applyAmbient();
-  $("#pipeHint").textContent = `完成 · 共 ${out.length} 张。分类可以随时在详情里手改。`;
+  $("#pipeHint").textContent = failed
+    ? `完成 · 成功 ${out.length} 张，失败 ${failed} 张。失败的那几张可以再传一次。`
+    : `完成 · 共 ${out.length} 张。分类可以随时在详情里手改，所有人都能看到了。`;
   $("#pipeDone").hidden = false;
   $("#pipeDone").onclick = () => { pipe.classList.remove("on"); scrim.classList.remove("on"); };
   if (RM.matches) { setTimeout(() => { pipe.classList.remove("on"); scrim.classList.remove("on"); }, 700); }
@@ -2075,59 +2544,36 @@ $("#ambRange").addEventListener("input", e => {
    13.5 身份层 —— 进门 + 个人主页
    ========================================================================== */
 
-/* 历史遗留：这次改版之前传的截图没有署名。第一次进门时认领到自己名下，
-   否则它们会永远挂在「未署名」上。 */
-async function claimOrphans() {
-  const m = User.me; if (!m) return 0;
-  const orphans = S.items.filter(it => !it.ownerId);
-  for (const it of orphans) {
-    it.ownerId = m.id; it.ownerName = m.nick; it.ownerAv = m.av;
-    await Store.put(it);
-  }
-  if (orphans.length) { renderFilters(); renderWall(false); }
-  return orphans.length;
-}
-
-/* 改名 / 换头像之后，把过去的署名一起更新（靠 ID 认，不靠名字认） */
-async function syncFootprint(prevNick) {
-  const m = User.me; if (!m) return 0;
-  let n = 0;
-  for (const it of S.items) {
-    if (it.ownerId === m.id || (!it.ownerId && prevNick && it.ownerName === prevNick)) {
-      it.ownerId = m.id; it.ownerName = m.nick; it.ownerAv = m.av;
-      await Store.put(it); n++;
-    }
-    const meta = Meta.raw(it.id);
-    const list = (meta && meta.comments) || [];
-    let hit = false;
-    list.forEach(c => {
-      if (c.uid === m.id || (!c.uid && prevNick && c.who === prevNick)) {
-        c.uid = m.id; c.who = m.nick; c.av = m.av; hit = true;
-      }
-    });
-    if (hit) Meta.touch(it.id, { comments: list });
-  }
-  renderFilters(); renderWall(false);
-  if (S.openId) { const o = S.items.find(x => x.id === S.openId); if (o) renderSheet(o, true); }
-  return n;
-}
-
+/* 身份层：未登录 → 微信登录；已登录但还没起名 → 起名挑头像。
+   微信登录只确认「你是谁」，昵称和头像是我们自己的资料表。 */
 const Gate = (() => {
   let av = null;
-  function draw() {
+
+  function drawPicks() {
     $("#gatePicks").innerHTML = avPickerHTML(av);
-    bindAvPicker($("#gatePicks"), a => { av = a; draw(); });
+    bindAvPicker($("#gatePicks"), a => { av = a; drawPicks(); });
     check();
   }
   function check() { $("#gateEnter").disabled = !$("#gateName").value.trim(); }
-  function open() {
-    const el = $("#gate"), saved = User.me;
-    av = (saved && saved.av) || { type: "emoji", value: User.PRESETS[0] };
-    if (saved) $("#gateName").value = saved.nick;
+
+  function show(which) {
+    const el = $("#gate");
+    $("#gateLogin").hidden = which !== "login";
+    $("#gateProfile").hidden = which !== "profile";
     el.hidden = false;
-    draw();
     void el.offsetWidth;                 // 强制回流：保证入场过渡从 opacity:0 出发，不依赖 rAF
     el.classList.add("on");
+  }
+  function openLogin() {
+    if (!CloudOk()) { fatal(bootErr); return; }
+    $("#gateWx").disabled = false;
+    show("login");
+  }
+  function openProfile() {
+    const saved = User.profile;
+    av = (saved && avFromText(saved.av)) || { type: "emoji", value: User.PRESETS[0] };
+    if (saved && saved.nick) $("#gateName").value = saved.nick;
+    show("profile");
     setTimeout(() => { try { $("#gateName").focus(); } catch (e) {} }, 430);
   }
   function close() {
@@ -2135,17 +2581,38 @@ const Gate = (() => {
     el.classList.remove("on");
     setTimeout(() => { el.hidden = true; }, 430);
   }
+  /* 登录按钮：SDK 只返回要跳去的地址，由我们自己跳转 */
+  async function wx() {
+    const btn = $("#gateWx"), note = $("#gateWxNote");
+    btn.disabled = true;
+    note.textContent = "正在跳到微信授权…";
+    try {
+      const r = await cloud.auth.signInWithOAuth({ provider: "wechat", redirectTo: location.origin });
+      if (r.error) { note.textContent = errText(r.error); btn.disabled = false; return; }
+      location.assign(r.data.url);
+    } catch (e) {
+      logErr("signInWithOAuth", e);
+      note.textContent = errText(e);
+      btn.disabled = false;
+    }
+  }
   async function submit() {
     const nick = $("#gateName").value.trim();
     if (!nick) return;
-    const first = !User.me;
-    User.save({ nick, av });
-    close();
-    applyMe();
-    const got = first ? await claimOrphans() : 0;
-    toast(got ? `欢迎，${nick}。顺手把墙上 ${got} 张没署名的截图认领给你了` : `欢迎，${nick}`, 4200);
+    $("#gateEnter").disabled = true;
+    try {
+      await Repo.saveProfile({ nick: nick, av: av, bio: (User.profile && User.profile.bio) || "" });
+      await refreshMyProfile();
+      Repo.applyProfiles();
+      close(); applyMe(); renderFilters(); renderWall(true);
+      toast("欢迎，" + nick, 3200);
+    } catch (e) {
+      logErr("saveProfile", e);
+      toast(errText(e), 3600);
+      $("#gateEnter").disabled = false;
+    }
   }
-  return { open, close, submit, check };
+  return { openLogin, openProfile, close, submit, check, wx };
 })();
 
 const Profile = (() => {
@@ -2158,9 +2625,8 @@ const Profile = (() => {
   function commentsOf(p) {
     const out = [];
     S.items.forEach(it => {
-      const meta = Meta.raw(it.id); if (!meta || !meta.comments) return;
-      meta.comments.forEach(c => {
-        if (p.id ? c.uid === p.id : (!c.uid && c.who === p.nick)) out.push({ it, c });
+      (S.comments[it.rowId] || []).forEach(c => {
+        if (p.id ? c.uid === p.id : (!c.uid && c.who === p.nick)) out.push({ it: it, c: c });
       });
     });
     return out.sort((a, b) => b.c.at - a.c.at);
@@ -2169,13 +2635,20 @@ const Profile = (() => {
   function open(who) {
     if (!who) {
       const m = User.me;
-      if (!m) { Gate.open(); return; }
+      if (!m || !User.session) { Gate.openLogin(); return; }
       who = { id: m.id, nick: m.nick, av: m.av, bio: m.bio, at: m.at };
     }
     cur = who;
     $("#profile").classList.add("on");
     document.body.classList.add("locked");
     draw();
+  }
+  /* 打开别人的主页：优先用云端资料，取不到才退回记录里的快照 */
+  function openUser(id, nick, av) {
+    if (id && User.me && id === User.me.id) { open(); return; }
+    const p = id && S.profiles[id];
+    if (p) open({ id: p.id, nick: p.nick, av: avFromText(p.av), bio: p.bio, at: p.at });
+    else open({ id: id || null, nick: nick || "未署名", av: av || null, bio: "", at: null });
   }
   function close() {
     $("#profile").classList.remove("on");
@@ -2185,7 +2658,7 @@ const Profile = (() => {
   function go(t) { tab = t; draw(); }
 
   function statsHTML(p, its, cms) {
-    const likes = its.reduce((n, it) => n + ((Meta.raw(it.id) && Meta.raw(it.id).likes) || 0), 0);
+    const likes = its.reduce((n, it) => n + ((S.likes[it.rowId] && S.likes[it.rowId].n) || 0), 0);
     const mine = isMe(p);
     const s = [
       { n: its.length, l: mine ? "我传的截图" : "传的截图" },
@@ -2215,7 +2688,7 @@ const Profile = (() => {
           <button class="btn ghost" id="edCancel">取消</button>
           <button class="btn ghost danger" id="edOut" style="margin-left:auto">退出登录</button>
         </div>
-        <p class="pf-note">署名靠身份 ID 关联，不靠名字：改完昵称和头像，你之前传的截图、发过的评论会跟着一起更新。<br>退出登录只清掉这台设备上的身份，墙上的截图不会被删。</p>
+        <p class="pf-note">署名靠身份 ID 关联，不靠名字：改完昵称和头像，你之前传的截图、发过的评论会跟着一起更新。<br>昵称、头像和截图都保存在云端，换台手机用微信登录还是你。退出只是登出，墙上内容不会被删。</p>
       </div>`;
   }
 
@@ -2226,7 +2699,7 @@ const Profile = (() => {
       if (!cms.length) return `<p class="pf-empty">${mine ? "你还没评论过。看到好笑的，去留一句。" : "TA 还没评论过。"}</p>`;
       return cms.map(x => `
         <div class="pf-cmt" data-it="${x.it.id}" role="button" tabindex="0">
-          <img src="${x.it.data}" alt="">
+          <img src="${x.it.data || ""}" alt="" data-path="${esc(x.it.path || "")}">
           <div class="b">
             <p class="w">在《${esc(x.it.title)}》下 · ${timeAgo(x.c.at)}</p>
             <p class="x">${esc(x.c.text)}</p>
@@ -2240,7 +2713,7 @@ const Profile = (() => {
     return `<div class="pf-grid">${its.map((it, i) => {
       const c = catOf(it.cat);
       return `<div class="pf-card" data-it="${it.id}" role="button" tabindex="0" style="--d:${Math.min(i, 12) * 50}ms">
-          <img src="${it.data}" alt="${esc(it.title)}" loading="lazy">
+          <img src="${it.data || ""}" alt="${esc(it.title)}" loading="lazy" data-path="${esc(it.path || "")}">
           <div class="cap"><p>${esc(it.title)}</p><span>${esc(c.name)} · ${timeAgo(it.at)}</span></div>
         </div>`;
     }).join("")}</div>`;
@@ -2277,6 +2750,8 @@ const Profile = (() => {
 
     $$("#pfInner [data-tab]").forEach(b => b.addEventListener("click", () => go(b.dataset.tab)));
     $$("#pfBody [data-it]").forEach(el => {
+      const im = $("img[data-path]", el);
+      if (im) im.addEventListener("error", () => Urls.revive(im, im.dataset.path));
       const it = S.items.find(x => x.id === el.dataset.it); if (!it) return;
       const go2 = () => { close(); openSheet(it, el); };
       el.addEventListener("click", go2);
@@ -2297,37 +2772,66 @@ const Profile = (() => {
     $("#edSave").addEventListener("click", async () => {
       const nick = $("#edName").value.trim();
       if (!nick) { toast("昵称不能是空的"); return; }
-      const prev = User.me.nick;
-      User.save({ nick, av: draft.av, bio: $("#edBio").value.trim() });
-      applyMe();
-      const n = await syncFootprint(prev);
-      const m2 = User.me;
-      cur = { id: m2.id, nick: m2.nick, av: m2.av, bio: m2.bio, at: m2.at };
-      draw();
-      toast(n ? `资料已更新，${n} 处署名跟着改了` : "资料已更新");
+      const btn = $("#edSave"); btn.disabled = true;
+      try {
+        await Repo.saveProfile({ nick: nick, av: draft.av, bio: $("#edBio").value.trim() });
+        await refreshMyProfile();
+        Repo.applyProfiles();
+        applyMe();
+        const m2 = User.me;
+        cur = { id: m2.id, nick: m2.nick, av: m2.av, bio: m2.bio, at: m2.at };
+        draw(); renderFilters(); renderWall(false);
+        if (S.openId) { const o = S.items.find(x => x.id === S.openId); if (o) renderSheet(o, true); }
+        toast("资料已更新，墙上和评论里的署名跟着一起改了");
+      } catch (e) {
+        logErr("saveProfile", e);
+        toast(errText(e), 3600);
+      } finally { const b = $("#edSave"); if (b) b.disabled = false; }
     });
     $("#edCancel").addEventListener("click", () => draw());
-    $("#edOut").addEventListener("click", () => {
-      if (!window.confirm("退出后这台设备上的身份会被清掉（墙上的截图不会删）。确定退出？")) return;
-      User.logout();
-      close(); applyMe();
-      setTimeout(() => Gate.open(), 300);
+    $("#edOut").addEventListener("click", async () => {
+      if (!window.confirm("退出登录？墙上的截图和评论不会删，重新用微信登录就能回来。")) return;
+      try { await cloud.auth.signOut(); } catch (e) { logErr("signOut", e); }
+      User.setSession(null); User.setProfile(null);
+      S.items = []; S.likes = {}; S.comments = {}; S.profiles = {};
+      close(); applyMe(); renderFilters(); renderWall(false);
+      setTimeout(() => Gate.openLogin(), 300);
     });
   }
 
-  return { open, close, go };
+  return { open, close, go, openUser };
 })();
 
-$("#navMe").addEventListener("click", () => { if (User.me) Profile.open(); else Gate.open(); });
+$("#navMe").addEventListener("click", () => { if (User.session) Profile.open(); else Gate.openLogin(); });
 $("#pfBack").addEventListener("click", () => Profile.close());
 $("#pfEditBtn").addEventListener("click", () => Profile.go("account"));
+$("#gateWx").addEventListener("click", () => Gate.wx());
 $("#gateName").addEventListener("input", () => Gate.check());
 $("#gateName").addEventListener("keydown", e => { if (e.key === "Enter") Gate.submit(); });
 $("#gateEnter").addEventListener("click", () => Gate.submit());
+$("#fatalRetry").addEventListener("click", () => location.reload());
 
 /* ============================================================================
    14. 启动
    ========================================================================== */
+function fatal(msg) {
+  const el = $("#fatal");
+  if (!el) { toast(msg, 6000); return; }
+  $("#fatalMsg").textContent = msg;
+  el.hidden = false;
+}
+
+/* 签名地址最长 1 小时。页面放久了就把过期的续一遍，别让图集体变成破图 */
+async function refreshUrls() {
+  if (!User.session || !S.items.length) return;
+  try {
+    await Urls.sign(S.items.map(i => i.path));
+    let dirty = false;
+    S.items.forEach(it => { const u = Urls.get(it.path); if (u && u !== it.data) { it.data = u; dirty = true; } });
+    if (dirty) renderWall(false);
+  } catch (e) { logErr("refreshUrls", e); }
+}
+
 (async function init() {
   $$("[data-tw]").forEach(seg => {
     const key = seg.dataset.tw;
@@ -2337,15 +2841,57 @@ $("#gateEnter").addEventListener("click", () => Gate.submit());
   buildPipeline($("#pipeStages"));
   applyMe();
 
-  S.items = await Store.all();
-  S.items.sort((a, b) => b.at - a.at);
+  if (!CloudOk()) { fatal(bootErr || "云服务不可用"); return; }
+
+  /* 微信登录的回调必须无条件先跑，且早于任何登录守卫：
+     否则守卫会在 code 还没兑换时就把页面拆掉，而 code 是一次性的。 */
+  try {
+    const cb = await cloud.auth.handleWechatWebCallback();
+    if (cb.error) toast(errText(cb.error), 5000);
+    else if (cb.data) history.replaceState(null, "", location.pathname);  // 清掉 code/state，否则刷新会重放已用过的 code
+  } catch (e) { logErr("wechatCallback", e); }
+
+  let sess = null;
+  try {
+    const r = await cloud.auth.getSession();
+    if (r.error) toast(errText(r.error), 5000);
+    sess = r.data || null;
+  } catch (e) { logErr("getSession", e); }
+
+  if (!sess) {
+    S.ready = true;
+    renderFilters(); renderWall(false);
+    $("#emptyH").textContent = "还没进来";
+    $("#emptyP").textContent = "用微信登录，就能看到朋友们传的截图，也能把自己那张缺德图传上来。";
+    $("#emptyRow").hidden = false;
+    setTimeout(() => Gate.openLogin(), 300);
+    return;
+  }
+  User.setSession(sess);
+
+  $("#empty").hidden = false;
+  $("#emptyH").textContent = "正在从云端取图…";
+  $("#emptyP").textContent = "第一次打开会稍慢一点，之后有缓存就快了。";
+  $("#emptyRow").hidden = true;
+
+  try {
+    await Repo.loadAll();
+  } catch (e) {
+    logErr("loadAll", e);
+    fatal("取不到墙上的内容：" + errText(e));
+    return;
+  }
+
+  S.ready = true;
   renderFilters(); renderWall(true); applyAmbient();
 
-  if (!User.me) setTimeout(() => Gate.open(), 420);
+  try { await refreshMyProfile(); } catch (e) { logErr("refreshMyProfile", e); }
+  if (User.me && User.me.ready) { Repo.applyProfiles(); applyMe(); renderWall(false); }
+  else setTimeout(() => Gate.openProfile(), 420);
 
-  if (Store.memOnly) {
-    setTimeout(() => toast("当前以本地文件方式打开，数据无法长期保存。双击 start-server.bat 打开可保存。", 6000), 900);
-  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshUrls();
+  });
 })();
 </script>
 </body>
