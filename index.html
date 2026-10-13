@@ -1563,7 +1563,9 @@ function avHTML(av, size, extra, fallbackName) {
     const h = hueOf(a.path || ini || "img");
     const grad = `linear-gradient(140deg,hsl(${h} 64% 58%),hsl(${(h + 42) % 360} 56% 42%))`;
     const bg = a.value ? `url('${a.value}'), ${grad}` : grad;
-    return `<span class="av ${extra || ""}${a.value ? " has-img" : ""}" style="${st}background-image:${bg}" data-avpath="${esc(a.path || "")}"><i class="av-ini" style="font-size:${Math.round(size * .42)}px;font-style:normal">${esc(ini)}</i></span>`;
+    /* data-avurl 记下「当时铺的是哪个地址」：签名地址约 1 小时过期，
+       hydrate 靠它发现铺上去的图已经死了；data-avgrad 留着渐变，重铺时不用解析旧背景 */
+    return `<span class="av ${extra || ""}${a.value ? " has-img" : ""}" style="${st}background-image:${bg}" data-avpath="${esc(a.path || "")}" data-avgrad="${esc(grad)}"${a.value ? ` data-avurl="${esc(a.value)}"` : ""}><i class="av-ini" style="font-size:${Math.round(size * .42)}px;font-style:normal">${esc(ini)}</i></span>`;
   }
   const ch = a.value ? String(a.value).slice(0, 2) : "";
   if (!ch)
@@ -1573,17 +1575,26 @@ function avHTML(av, size, extra, fallbackName) {
 }
 const meHTML = (size, extra) => avHTML(User.me ? User.me.av : null, size, extra, User.me ? User.me.nick : "");
 
-/* 图片头像的签名地址是异步来的：渲染完统一补签一次再盖上 */
+/* 图片头像的签名地址是异步来的：渲染完统一补签一次再盖上。
+   已经铺过图的不代表一劳永逸——地址约 1 小时过期，铺的和缓存里最新的不一致就得重铺。
+   （CSS 背景图没有 <img> 的 onerror，过期只能靠这里主动发现。） */
 const Avatars = (() => {
+  const miss = new Set();  // 签不出来（多半已删除）的路径，别每次 hydrate 都白跑一趟
   async function hydrate(root) {
-    const els = $$("[data-avpath]", root || document).filter(e => !e.classList.contains("has-img"));
+    const els = $$("[data-avpath]", root || document).filter(e => {
+      if (miss.has(e.dataset.avpath)) return false;
+      if (!e.classList.contains("has-img")) return true;
+      const cur = Urls.get(e.dataset.avpath);
+      return !cur || cur !== e.dataset.avurl;
+    });
     if (!els.length) return;
-    try { await Urls.sign(els.map(e => e.dataset.avpath)); } catch (e) { logErr("avatars", e); }
+    let signOk = true;
+    try { await Urls.sign(els.map(e => e.dataset.avpath)); } catch (e) { signOk = false; logErr("avatars", e); }
     els.forEach(e => {
       const u = Urls.get(e.dataset.avpath);
-      if (!u) return;
-      const cur = e.style.backgroundImage || "";
-      e.style.backgroundImage = `url('${u}')` + (cur.indexOf("linear-gradient") >= 0 ? ", " + cur : "");
+      if (!u || u === e.dataset.avurl) { if (!u && signOk) miss.add(e.dataset.avpath); return; }
+      e.style.backgroundImage = `url('${u}'), ${e.dataset.avgrad || "linear-gradient(140deg,#a89f94,#6e675e)"}`;
+      e.dataset.avurl = u;
       e.classList.add("has-img");
     });
   }
@@ -3034,13 +3045,26 @@ function fatal(msg) {
   el.hidden = false;
 }
 
-/* 签名地址最长 1 小时。页面放久了就把过期的续一遍，别让图集体变成破图 */
+/* 签名地址最长 1 小时。页面放久了就把过期的续一遍，别让图集体变成破图。
+   头像地址也一起续：它们被「烤」在内存对象里（cm.av.value 等），
+   过期后 avHTML 会拿着死地址照样画 has-img，光重铺 DOM 治不了根。 */
 async function refreshUrls() {
   if (!User.session || !S.items.length) return;
   try {
-    await Urls.sign(S.items.map(i => i.path));
+    const avPaths = [];
+    const pushAv = a => { if (a && a.type === "img" && a.path) avPaths.push(a.path); };
+    Object.keys(S.profiles).forEach(k => pushAv(avFromText(S.profiles[k].av)));
+    S.items.forEach(it => pushAv(it.ownerAv));
+    Object.keys(S.comments).forEach(k => S.comments[k].forEach(cm => pushAv(cm.av)));
+    pushAv(User.me && User.me.av);
+    await Urls.sign(S.items.map(i => i.path).concat(avPaths));
     let dirty = false;
     S.items.forEach(it => { const u = Urls.get(it.path); if (u && u !== it.data) { it.data = u; dirty = true; } });
+    /* 内存里的头像对象重新取一遍最新地址；再走 applyProfiles 用资料表的路径统一覆盖 */
+    const reval = a => { if (a && a.type === "img" && a.path) a.value = Urls.get(a.path); };
+    S.items.forEach(it => reval(it.ownerAv));
+    Object.keys(S.comments).forEach(k => S.comments[k].forEach(cm => reval(cm.av)));
+    Repo.applyProfiles();
     if (dirty) renderWall(false);
     Avatars.hydrate().catch(() => {});
   } catch (e) { logErr("refreshUrls", e); }
@@ -3111,6 +3135,8 @@ async function enterApp() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") refreshUrls();
   });
+  /* 一直开着不切后台时 visibilitychange 不会触发，而签名地址约 57 分钟就失效 */
+  setInterval(refreshUrls, 5 * 60 * 1000);
 })();
 </script>
 </body>
