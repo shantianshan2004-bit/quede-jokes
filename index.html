@@ -636,6 +636,24 @@ html[data-theme="dark"] .pk.up:hover{ background:rgba(255,255,255,.08); }
 .btn:disabled{ opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; filter:none; }
 .gate-note{ font-size:11.5px; color:var(--ink-3); line-height:1.65; margin:17px 0 0; }
 
+/* 手机号验证码登录（手机端主入口） */
+#phBox{ text-align:left; }
+.ph-row{ display:flex; gap:8px; align-items:stretch; }
+.ph-row input{
+  flex:1 1 auto; min-width:0; height:46px; padding:0 15px; border-radius:var(--r-md);
+  border:.5px solid var(--line-2); background:rgba(255,255,255,.66); outline:none; font-size:15px;
+  letter-spacing:.02em;
+  transition:box-shadow var(--d-base) var(--e-expo), border-color var(--d-base) linear;
+}
+html[data-theme="dark"] .ph-row input{ background:rgba(255,255,255,.08); }
+.ph-row input:focus{ border-color:var(--warm); box-shadow:0 0 0 4px var(--warm-soft); }
+.ph-row .btn{ flex:0 0 auto; height:46px; white-space:nowrap; }
+.ph-row + .ph-row{ margin-top:9px; }
+.ph-err{ font-size:11.5px; color:var(--warm-ink); margin:7px 2px 0; }
+#phBox .gate-note{ margin-top:12px; }
+.gate-or{ display:flex; align-items:center; gap:11px; margin:17px 0 15px; color:var(--ink-3); font-size:11.5px; }
+.gate-or::before, .gate-or::after{ content:""; flex:1 1 auto; height:1px; background:var(--line-2); }
+
 /* ---------- 导航里的「我」 ---------- */
 .nav-me{
   flex:0 0 auto; padding:0; width:38px; height:38px; border:0; border-radius:999px; cursor:pointer;
@@ -901,7 +919,24 @@ body.locked{ overflow:hidden; }
     <h1 class="gate-title">缺德笑话</h1>
 
     <div id="gateLogin">
-      <p class="gate-sub">损友们的聊天截图墙。用微信登录进来，你传的图和评论会同步到所有人的手机上。</p>
+      <p class="gate-sub">损友们的聊天截图墙。登录进来，你传的图和评论会同步到所有人的手机上。</p>
+
+      <!-- 手机号 + 验证码：一部手机就能走完，是手机端的主入口 -->
+      <div id="phBox">
+        <div class="ph-row">
+          <input id="phPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="手机号" autocomplete="tel" aria-label="手机号">
+          <button class="btn ghost" id="phSend" type="button">获取验证码</button>
+        </div>
+        <p class="ph-err" id="phPhoneErr" hidden>请输入正确的 11 位手机号</p>
+        <div class="ph-row">
+          <input id="phCode" type="tel" inputmode="numeric" maxlength="6" placeholder="6 位验证码" autocomplete="one-time-code" aria-label="短信验证码">
+          <button class="btn" id="phLogin" type="button">登录</button>
+        </div>
+        <p class="gate-note" id="phNote">第一次登录会自动建号，不用记密码。只用来确认你是谁。</p>
+      </div>
+
+      <p class="gate-or"><span>或</span></p>
+
       <button class="btn wide wx" id="gateWx">
         <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M9 3.4C4.9 3.9 1.8 6.6 1.8 9.9c0 1.9 1.1 3.6 2.9 4.7l-.7 2.2 2.5-1.3c.8.2 1.6.4 2.5.4h.5a5.4 5.4 0 01-.2-1.5c0-3 2.9-5.4 6.5-5.4h.6C15.8 5.1 12.7 3.1 9 3.4z" fill="currentColor"/>
@@ -909,7 +944,7 @@ body.locked{ overflow:hidden; }
         </svg>
         微信登录
       </button>
-      <p class="gate-note" id="gateWxNote">登录只用来确认你是谁，拿不到你的密码。墙上的内容只有登录进来的人能看——不会出现在搜索引擎里。</p>
+      <p class="gate-note" id="gateWxNote">微信登录要扫二维码：在电脑上打开本站、用手机微信扫最顺（一台手机打开会显示二维码，得用另一台设备扫）。墙上的内容只有登录进来的人能看。</p>
     </div>
 
     <div id="gateProfile" hidden>
@@ -923,7 +958,7 @@ body.locked{ overflow:hidden; }
       <div class="avatar-pick" id="gatePicks"></div>
 
       <button class="btn wide" id="gateEnter" disabled>进场</button>
-      <p class="gate-note">昵称和头像存在云端。换台手机用微信登录，还是你，传过的图和评论都在。</p>
+      <p class="gate-note">昵称和头像存在云端。换台手机用同一种方式登录，还是你，传过的图和评论都在。</p>
     </div>
   </div>
 </div>
@@ -1515,7 +1550,7 @@ async function fileToAvatar(file) {
 function applyMe() {
   const m = User.me;
   $("#navMe").innerHTML = avHTML(m ? m.av : null, 30);
-  $("#navMe").title = m ? m.nick + " · 个人主页" : "还没登录，点这里用微信登录";
+  $("#navMe").title = m ? m.nick + " · 个人主页" : "还没登录，点这里登录";
 }
 
 /* ============================================================================
@@ -2550,6 +2585,10 @@ $("#ambRange").addEventListener("input", e => {
    微信登录只确认「你是谁」，昵称和头像是我们自己的资料表。 */
 const Gate = (() => {
   let av = null;
+  /* 短信验证码的「挑战」必须存在事件之间：发送与校验是两个独立动作，
+     校验时绝不能重新发送（重发会让上一次的验证码作废）。 */
+  let pendingOtp = null;
+  let cdTimer = 0, cdLeft = 0;
 
   function drawPicks() {
     $("#gatePicks").innerHTML = avPickerHTML(av);
@@ -2557,6 +2596,105 @@ const Gate = (() => {
     check();
   }
   function check() { $("#gateEnter").disabled = !$("#gateName").value.trim(); }
+
+  /* ---- 手机号验证码 ---- */
+  function phoneErr(msg) {
+    const el = $("#phPhoneErr");
+    if (!msg) { el.hidden = true; el.textContent = ""; return; }
+    el.textContent = msg; el.hidden = false;
+  }
+  function cdTick() {
+    const btn = $("#phSend");
+    if (cdLeft <= 0) {
+      clearInterval(cdTimer); cdTimer = 0;
+      btn.disabled = false; btn.textContent = "获取验证码";
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = cdLeft + " 秒后重发";
+    cdLeft--;
+  }
+  function startCooldown(sec) {
+    cdLeft = sec;
+    clearInterval(cdTimer);
+    cdTick();
+    cdTimer = setInterval(cdTick, 1000);
+  }
+  function stopCooldown() {
+    clearInterval(cdTimer); cdTimer = 0; cdLeft = 0;
+    const btn = $("#phSend");
+    if (btn) { btn.disabled = false; btn.textContent = "获取验证码"; }
+  }
+  async function sendCode() {
+    const phone = $("#phPhone").value.trim();
+    if (!/^1\d{10}$/.test(phone)) { phoneErr("请输入正确的 11 位手机号"); return; }
+    phoneErr("");
+    const btn = $("#phSend");
+    btn.disabled = true; btn.textContent = "发送中…";
+    try {
+      const sent = await cloud.auth.sendOtp({ phone: phone });
+      if (sent.error) {
+        logErr("sendOtp", sent.error);
+        phoneErr(errText(sent.error));
+        btn.disabled = false; btn.textContent = "获取验证码";
+        return;
+      }
+      /* 同一个手机号重发时要替换挑战；换了号码则旧的作废 */
+      pendingOtp = { phone: phone, verificationId: sent.data.verificationId, isExistingUser: sent.data.isExistingUser };
+      startCooldown(60);
+      toast("验证码已发出，请查看短信", 3200);
+      try { $("#phCode").focus(); } catch (e) {}
+    } catch (e) {
+      logErr("sendOtp", e);
+      phoneErr(errText(e));
+      btn.disabled = false; btn.textContent = "获取验证码";
+    }
+  }
+  async function phoneLogin() {
+    const phone = $("#phPhone").value.trim();
+    const token = $("#phCode").value.trim();
+    const pending = pendingOtp;
+    if (!pending || pending.phone !== phone) { phoneErr("请先点「获取验证码」拿到验证码"); return; }
+    if (!/^\d{4,6}$/.test(token)) { phoneErr("请输入短信里的验证码"); return; }
+    phoneErr("");
+    const btn = $("#phLogin");
+    btn.disabled = true; btn.textContent = "登录中…";
+    try {
+      const done = await cloud.auth.verifyOtp({
+        phone: pending.phone,
+        verificationId: pending.verificationId,
+        isExistingUser: pending.isExistingUser,
+        token: token,
+      });
+      if (done.error) {
+        logErr("verifyOtp", done.error);
+        phoneErr(errText(done.error));
+        btn.disabled = false; btn.textContent = "登录";
+        return;
+      }
+      pendingOtp = null;
+      User.setSession(done.data);
+      await enterApp();
+      toast("登录成功", 2600);
+    } catch (e) {
+      logErr("verifyOtp", e);
+      phoneErr(errText(e));
+      btn.disabled = false; btn.textContent = "登录";
+    }
+  }
+  function onPhoneInput() {
+    phoneErr("");                                       // 用户一编辑就撤掉错误提示
+    const phone = $("#phPhone").value.trim();
+    if (pendingOtp && pendingOtp.phone !== phone) pendingOtp = null;   // 号码变了，旧挑战作废
+  }
+  function resetPhone() {
+    pendingOtp = null;
+    stopCooldown();
+    phoneErr("");
+    const b = $("#phLogin");
+    if (b) { b.disabled = false; b.textContent = "登录"; }
+    const c = $("#phCode"); if (c) c.value = "";
+  }
 
   function show(which) {
     const el = $("#gate");
@@ -2580,6 +2718,7 @@ const Gate = (() => {
   }
   function close() {
     const el = $("#gate");
+    resetPhone();
     el.classList.remove("on");
     setTimeout(() => { el.hidden = true; }, 430);
   }
@@ -2614,7 +2753,7 @@ const Gate = (() => {
       $("#gateEnter").disabled = false;
     }
   }
-  return { openLogin, openProfile, close, submit, check, wx };
+  return { openLogin, openProfile, close, submit, check, wx, sendCode, phoneLogin, resetPhone, onPhoneInput };
 })();
 
 const Profile = (() => {
@@ -2690,7 +2829,7 @@ const Profile = (() => {
           <button class="btn ghost" id="edCancel">取消</button>
           <button class="btn ghost danger" id="edOut" style="margin-left:auto">退出登录</button>
         </div>
-        <p class="pf-note">署名靠身份 ID 关联，不靠名字：改完昵称和头像，你之前传的截图、发过的评论会跟着一起更新。<br>昵称、头像和截图都保存在云端，换台手机用微信登录还是你。退出只是登出，墙上内容不会被删。</p>
+        <p class="pf-note">署名靠身份 ID 关联，不靠名字：改完昵称和头像，你之前传的截图、发过的评论会跟着一起更新。<br>昵称、头像和截图都保存在云端，换台手机登录还是你。退出只是登出，墙上内容不会被删。</p>
       </div>`;
   }
 
@@ -2792,7 +2931,7 @@ const Profile = (() => {
     });
     $("#edCancel").addEventListener("click", () => draw());
     $("#edOut").addEventListener("click", async () => {
-      if (!window.confirm("退出登录？墙上的截图和评论不会删，重新用微信登录就能回来。")) return;
+      if (!window.confirm("退出登录？墙上的截图和评论不会删，重新登录就能回来。")) return;
       try { await cloud.auth.signOut(); } catch (e) { logErr("signOut", e); }
       User.setSession(null); User.setProfile(null);
       S.items = []; S.likes = {}; S.comments = {}; S.profiles = {};
@@ -2808,6 +2947,10 @@ $("#navMe").addEventListener("click", () => { if (User.session) Profile.open(); 
 $("#pfBack").addEventListener("click", () => Profile.close());
 $("#pfEditBtn").addEventListener("click", () => Profile.go("account"));
 $("#gateWx").addEventListener("click", () => Gate.wx());
+$("#phSend").addEventListener("click", () => Gate.sendCode());
+$("#phLogin").addEventListener("click", () => Gate.phoneLogin());
+$("#phPhone").addEventListener("input", () => Gate.onPhoneInput());
+$("#phCode").addEventListener("keydown", e => { if (e.key === "Enter") Gate.phoneLogin(); });
 $("#gateName").addEventListener("input", () => Gate.check());
 $("#gateName").addEventListener("keydown", e => { if (e.key === "Enter") Gate.submit(); });
 $("#gateEnter").addEventListener("click", () => Gate.submit());
@@ -2832,6 +2975,30 @@ async function refreshUrls() {
     S.items.forEach(it => { const u = Urls.get(it.path); if (u && u !== it.data) { it.data = u; dirty = true; } });
     if (dirty) renderWall(false);
   } catch (e) { logErr("refreshUrls", e); }
+}
+
+/* 登录成功后的统一落地：取数据 → 渲染 → 必要时补昵称头像。
+   微信回调和手机号验证码登录都走这一条路，不要各写一份。 */
+async function enterApp() {
+  $("#empty").hidden = false;
+  $("#emptyH").textContent = "正在从云端取图…";
+  $("#emptyP").textContent = "第一次打开会稍慢一点，之后有缓存就快了。";
+  $("#emptyRow").hidden = true;
+
+  try {
+    await Repo.loadAll();
+  } catch (e) {
+    logErr("loadAll", e);
+    fatal("取不到墙上的内容：" + errText(e));
+    return;
+  }
+
+  S.ready = true;
+  renderFilters(); renderWall(true); applyAmbient();
+
+  try { await refreshMyProfile(); } catch (e) { logErr("refreshMyProfile", e); }
+  if (User.me && User.me.ready) { Repo.applyProfiles(); applyMe(); renderWall(false); }
+  else setTimeout(() => Gate.openProfile(), 420);
 }
 
 (async function init() {
@@ -2864,32 +3031,13 @@ async function refreshUrls() {
     S.ready = true;
     renderFilters(); renderWall(false);
     $("#emptyH").textContent = "还没进来";
-    $("#emptyP").textContent = "用微信登录，就能看到朋友们传的截图，也能把自己那张缺德图传上来。";
+    $("#emptyP").textContent = "登录后就能看到朋友们传的截图，也能把自己那张缺德图传上来。";
     $("#emptyRow").hidden = false;
     setTimeout(() => Gate.openLogin(), 300);
     return;
   }
   User.setSession(sess);
-
-  $("#empty").hidden = false;
-  $("#emptyH").textContent = "正在从云端取图…";
-  $("#emptyP").textContent = "第一次打开会稍慢一点，之后有缓存就快了。";
-  $("#emptyRow").hidden = true;
-
-  try {
-    await Repo.loadAll();
-  } catch (e) {
-    logErr("loadAll", e);
-    fatal("取不到墙上的内容：" + errText(e));
-    return;
-  }
-
-  S.ready = true;
-  renderFilters(); renderWall(true); applyAmbient();
-
-  try { await refreshMyProfile(); } catch (e) { logErr("refreshMyProfile", e); }
-  if (User.me && User.me.ready) { Repo.applyProfiles(); applyMe(); renderWall(false); }
-  else setTimeout(() => Gate.openProfile(), 420);
+  await enterApp();
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") refreshUrls();
