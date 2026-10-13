@@ -935,7 +935,7 @@ body.locked{ overflow:hidden; }
         <p class="gate-note" id="phNote">第一次登录会自动建号，不用记密码。只用来确认你是谁。</p>
       </div>
 
-      <p class="gate-or"><span>或</span></p>
+      <p class="gate-or" id="gateOr"><span>或</span></p>
 
       <button class="btn wide wx" id="gateWx">
         <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
@@ -2699,10 +2699,22 @@ const Gate = (() => {
     const c = $("#phCode"); if (c) c.value = "";
   }
 
+  /* Android App 内：自己扫不了自己的二维码，微信入口收起来，只留验证码登录。
+     标记由 App 壳注入（window.__isApp），网页版不受影响。 */
+  function applyAppMode() {
+    if (!window.__isApp) return;
+    ["#gateWx", "#gateOr", "#gateWxNote"].forEach(sel => {
+      const el = $(sel);
+      if (el) el.hidden = true;
+    });
+    const phNote = $("#phNote");
+    if (phNote) phNote.textContent = "在 App 里用手机号验证码登录。第一次登录会自动建号，不用记密码。";
+  }
   function show(which) {
     const el = $("#gate");
     $("#gateLogin").hidden = which !== "login";
     $("#gateProfile").hidden = which !== "profile";
+    applyAppMode();
     el.hidden = false;
     void el.offsetWidth;                 // 强制回流：保证入场过渡从 opacity:0 出发，不依赖 rAF
     el.classList.add("on");
