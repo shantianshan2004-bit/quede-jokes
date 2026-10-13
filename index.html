@@ -2675,6 +2675,9 @@ const Gate = (() => {
       pendingOtp = null;
       User.setSession(done.data);
       await enterApp();
+      /* 资料已齐 → 收起登录卡；没起过名 → enterApp 里会自动弹出起名卡，别收 */
+      if (User.me && User.me.ready) close();
+      else resetPhone();
       toast("登录成功", 2600);
     } catch (e) {
       logErr("verifyOtp", e);
