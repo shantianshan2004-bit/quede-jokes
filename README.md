@@ -49,6 +49,56 @@ python -m http.server 8787
 
 浏览器对 `file://` 协议禁用了 IndexedDB。直接双击打开时，数据只能退化成存在内存里，一关就消失。这不是 bug，是浏览器的安全限制。
 
+## 上传到 GitHub
+
+仓库名 `quede-jokes`，公开。这个文件夹已经是一个 git 仓库，并且已经有提交记录，只差把它推到 GitHub。
+
+### 第一次推送
+
+1. 打开 github.com，右上角 `+` → `New repository`
+2. 仓库名填 `quede-jokes`，类型选 `Public`
+3. **不要**勾选 `Add a README file`、`.gitignore`、`license`——留空仓
+
+   > 这一步很关键。如果远端先有了 README，它和本地就是两条不同的历史，push 会被拒绝。
+4. 建好后回到这个文件夹，**双击 `push-to-github.bat`**
+5. 第一次会弹出浏览器让你登录 GitHub。授权之后，推送会自动接着跑完
+
+脚本第一次运行时会让你粘贴仓库地址，形如：
+
+```
+https://github.com/你的用户名/quede-jokes.git
+```
+
+不想用脚本的话，手动就这三条命令：
+
+```bash
+git remote add origin https://github.com/你的用户名/quede-jokes.git
+git branch -M main
+git push -u origin main
+```
+
+### 以后每次改完
+
+```bash
+git add -A
+git commit -m "说明这次改了什么"
+git push
+```
+
+### 打开在线预览（免费）
+
+仓库页面 → `Settings` → 左侧 `Pages` → Source 选 `Deploy from a branch`，
+分支选 `main`、目录选 `/ (root)` → `Save`。
+
+等一两分钟，网址就是：
+
+```
+https://你的用户名.github.io/quede-jokes/
+```
+
+> 注意：这给的只是**别人能看见界面**。页面是纯前端，数据存在各自的浏览器里，
+> 朋友之间仍然看不到彼此的图。真正的共享要等接上后端。
+
 ## 技术说明
 
 - **单文件、零依赖、零构建**：所有 HTML / CSS / JS 都在这一个文件里，图片没有外部素材，示例截图由 canvas 当场画出来。
